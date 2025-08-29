@@ -6,6 +6,8 @@ package entities;
 
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
+import java.io.Console;
+
 import main.Juego;
 import static utilz.Constantes.ConstantesJugador.*;
 import static utilz.HelpMethods.*;
@@ -89,8 +91,12 @@ public class Player extends Entity{
         aniTick = 0;
         aniIndex = 0;
     }
+
     
     private void updatePos() {
+
+
+
         moving = false;
         if(jump){
             jump();
@@ -101,10 +107,12 @@ public class Player extends Entity{
         float xSpeed = 0;
         
         if(left){
+
             xSpeed -=playerSpeed;
         }
         if(right) {
             xSpeed +=playerSpeed;
+
         }
         if(!inAir){
             if(!IsEntityOnFloor(hitbox, lvlData)){
@@ -151,8 +159,9 @@ public class Player extends Entity{
     
     private void updateXPos(float xSpeed) {
        if(CanMoveHere(hitbox.x+xSpeed,hitbox.y,hitbox.width,hitbox.height,lvlData)){
-            hitbox.x += xSpeed;
-        } else { 
+           System.out.println(hitbox.x);
+           hitbox.x += xSpeed;
+        } else {
            hitbox.x = GetEntityXPosNextToWall(hitbox,xSpeed);
        }
     }

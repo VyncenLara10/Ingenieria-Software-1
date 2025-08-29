@@ -1,4 +1,5 @@
 package multiplayer;
+
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -9,7 +10,7 @@ public class GameClient {
         InetAddress serverAddr = InetAddress.getByName("localhost"); // o IP del servidor
         int serverPort = 5000;
 
-        // Hilo para escuchar actualizaciones del servidor
+        // Hilo para recibir mensajes del servidor
         Thread listener = new Thread(() -> {
             byte[] buffer = new byte[1024];
             while (true) {
@@ -25,16 +26,15 @@ public class GameClient {
         });
         listener.start();
 
-        // Simula enviar posición cada 500ms
-        int x = 0;
+        // Simula enviar     posición cada 500ms
+        float x = 0;
         while (true) {
-            String mensaje = "Jugador en X=" + x;
+            String mensaje = Boolean.toString(true);  // convertir float a string
             byte[] data = mensaje.getBytes();
             DatagramPacket packet = new DatagramPacket(data, data.length, serverAddr, serverPort);
             socket.send(packet);
 
-            x += 5; // mover jugador
-            Thread.sleep(500);
+            x += 0.5; // mover jugador
         }
     }
 }
