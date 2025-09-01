@@ -16,7 +16,7 @@ public class GameServer implements NetworkManager{
     private PrintWriter out;
 
     public GameServer(int port) throws IOException {
-        serverSocket = new ServerSocket(port);
+        serverSocket = new ServerSocket();
         System.out.println("Servidor esperando conexión...");
         socket = serverSocket.accept();
         System.out.println("Cliente conectado!");

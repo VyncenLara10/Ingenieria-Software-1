@@ -37,9 +37,9 @@ public class Juego implements Runnable{
         try {
             if (twoPlayers) {
                 if (isServer) {
-                    network = new GameServer(1234);
+                    network = new GameServer(0);
                 } else {
-                    network = new GameClient("localhost", 1234);
+                    network = new GameClient("localhost", 0);
                 }
             }
         } catch (IOException e) {
