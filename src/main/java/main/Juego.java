@@ -20,7 +20,7 @@ public class Juego implements Runnable{
 
     // multiplayer
     private boolean twoPlayers = true;   // para pruebas: true
-    private boolean isServer = true;     // decide si actúa como servidor o cliente
+    private boolean isServer = false;     // decide si actúa como servidor o cliente
     private NetworkManager network;
 
     public final static int TILES_DEFAULT_SIZE = 32;
@@ -37,9 +37,9 @@ public class Juego implements Runnable{
         try {
             if (twoPlayers) {
                 if (isServer) {
-                    network = new GameServer(0);
+                    network = new GameServer(5040);
                 } else {
-                    network = new GameClient("localhost", 0);
+                    network = new GameClient("localhost", 5040);
                 }
             }
         } catch (IOException e) {
@@ -79,21 +79,39 @@ public class Juego implements Runnable{
 
                 // si hay multiplayer, mandar y recibir
                 if (twoPlayers && network != null) {
-                    // enviar posición local
-                    network.send(new PlayerData(
-                        (int) player.getHitbox().x,
-                        (int) player.getHitbox().y
-                    ));
+                    if (isServer){
+                        network.send(new PlayerData(
+                            (int) player.getHitbox().x,
+                            (int) player.getHitbox().y
+                        ));
 
-                    // recibir posición remota
-                    try {
-                        PlayerData data = network.receive();
-                        if (data != null) {
-                            player2.getHitbox().x = data.x;
-                            player2.getHitbox().y = data.y;
+                        // recibir posición remota
+                        try {
+                            PlayerData data = network.receive();
+                            if (data != null) {
+                                player2.getHitbox().x = data.x;
+                                player2.getHitbox().y = data.y;
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    } else {
+                        // enviar posición local
+                        network.send(new PlayerData(
+                            (int) player2.getHitbox().x,
+                            (int) player2.getHitbox().y
+                        ));
+
+                        // recibir posición remota
+                        try {
+                            PlayerData data = network.receive();
+                            if (data != null) {
+                                player.getHitbox().x = data.x;
+                                player.getHitbox().y = data.y;
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
 
