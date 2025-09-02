@@ -1,47 +1,29 @@
 package multiplayer;
+
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.util.ArrayList;
-import java.util.List;
-
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class GameServer {
     public static void main(String[] args) throws Exception {
-        DatagramSocket serverSocket = new DatagramSocket(5000);
-        System.out.println("Servidor UDP en puerto 5000...");
+        DatagramSocket socket = new DatagramSocket(5000); // servidor escucha en 5000
+        System.out.println("Servidor UDP escuchando en puerto 5000...");
 
         byte[] buffer = new byte[1024];
-        List<DatagramPacket> clients = new ArrayList<>();
 
         while (true) {
-            // Recibe mensaje de un cliente
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-            serverSocket.receive(packet);
+            socket.receive(packet);
 
-            String msg = new String(packet.getData(), 0, packet.getLength());
-            System.out.println("Recibido: " + msg);
-
-            // Guarda cliente si es nuevo
-            boolean nuevo = true;
-            for (DatagramPacket c : clients) {
-                if (c.getAddress().equals(packet.getAddress()) && c.getPort() == packet.getPort()) {
-                    nuevo = false;
-                    break;
-                }
-            }
-            if (nuevo) {
-                clients.add(packet);
-                System.out.println("Nuevo cliente conectado: " + packet.getAddress() + ":" + packet.getPort());
+            // Reconstruir array de enteros desde bytes
+            ByteBuffer bb = ByteBuffer.wrap(packet.getData(), 0, packet.getLength());
+            int[] recibidos = new int[packet.getLength() / 4]; // cada int = 4 bytes
+            for (int i = 0; i < recibidos.length; i++) {
+                recibidos[i] = bb.getInt();
             }
 
-            // Reenvía mensaje a todos los clientes
-            for (DatagramPacket c : clients) {
-                DatagramPacket forward = new DatagramPacket(
-                        msg.getBytes(), msg.length(),
-                        c.getAddress(), c.getPort()
-                );
-                serverSocket.send(forward);
-            }
+            System.out.println("Array recibido: " + Arrays.toString(recibidos));
         }
     }
 }

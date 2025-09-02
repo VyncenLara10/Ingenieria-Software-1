@@ -3,38 +3,51 @@ package multiplayer;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 
 public class GameClient {
     public static void main(String[] args) throws Exception {
-        DatagramSocket socket = new DatagramSocket();
-        InetAddress serverAddr = InetAddress.getByName("localhost"); // o IP del servidor
-        int serverPort = 5000;
+        DatagramSocket socket = new DatagramSocket(); // cliente usa un puerto libre
+        InetAddress serverAddr = InetAddress.getByName("localhost"); // IP del servidor
+        int serverPort = 5000; // puerto donde escucha el servidor
 
-        // Hilo para recibir mensajes del servidor
-        Thread listener = new Thread(() -> {
-            byte[] buffer = new byte[1024];
-            while (true) {
-                try {
-                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                    socket.receive(packet);
-                    String msg = new String(packet.getData(), 0, packet.getLength());
-                    System.out.println("Update recibido: " + msg);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        listener.start();
+        // Array de enteros a enviar
+        int[] numeros = {10, 20, 30, 40, 50};
+        ByteBuffer bb = ByteBuffer.allocate(4 * numeros.length);
+        for (int num : numeros) {
+            bb.putInt(num);
+        }
+        byte[] data = bb.array();
 
-        // Simula enviar     posición cada 500ms
-        float x = 0;
+        DatagramPacket packet = new DatagramPacket(data, data.length, serverAddr, serverPort);
+
+        // Bucle infinito de envío/recepción
         while (true) {
-            String mensaje = Boolean.toString(true);  // convertir float a string
-            byte[] data = mensaje.getBytes();
-            DatagramPacket packet = new DatagramPacket(data, data.length, serverAddr, serverPort);
+            // ---- Enviar ----
             socket.send(packet);
+            System.out.println("Array enviado al servidor.");
 
-            x += 0.5; // mover jugador
+            // ---- Recibir ----
+            byte[] buffer = new byte[1024]; // buffer de recepción
+            DatagramPacket response = new DatagramPacket(buffer, buffer.length);
+            socket.receive(response); // se queda bloqueado hasta que recibe
+
+            // ---- Reconstruir array ----
+            ByteBuffer bbResp = ByteBuffer.wrap(response.getData(), 0, response.getLength());
+            int elementos = response.getLength() / 4; // cada int son 4 bytes
+            int[] recibidos = new int[elementos];
+            for (int i = 0; i < elementos; i++) {
+                recibidos[i] = bbResp.getInt();
+            }
+
+            // ---- Imprimir ----
+            System.out.print("Array recibido: ");
+            for (int n : recibidos) {
+                System.out.print(n + " ");
+            }
+            System.out.println();
+
+            // Un pequeño delay para no saturar
         }
     }
 }

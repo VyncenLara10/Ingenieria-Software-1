@@ -95,8 +95,6 @@ public class Player extends Entity{
     
     private void updatePos() {
 
-
-
         moving = false;
         if(jump){
             jump();
@@ -157,9 +155,8 @@ public class Player extends Entity{
         airSpeed = 0;
     }
     
-    private void updateXPos(float xSpeed) {
+    public void updateXPos(float xSpeed) {
        if(CanMoveHere(hitbox.x+xSpeed,hitbox.y,hitbox.width,hitbox.height,lvlData)){
-           System.out.println(hitbox.x);
            hitbox.x += xSpeed;
         } else {
            hitbox.x = GetEntityXPosNextToWall(hitbox,xSpeed);
@@ -258,4 +255,9 @@ public class Player extends Entity{
     public void setJump(boolean jump){
         this.jump = jump;
     }
+
+    public float return_velocity() {
+        return this.playerSpeed;
+    }
+
 }

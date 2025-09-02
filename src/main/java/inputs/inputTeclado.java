@@ -22,6 +22,7 @@ public class inputTeclado implements KeyListener{
                     paneljuego.getJuego().getPlayer().setUp(false);
                     paneljuego.getJuego().getPlayer2().setUp(false);
 
+
                     break;
                 case KeyEvent.VK_A:
                     paneljuego.getJuego().getPlayer().setLeft(false);
@@ -40,7 +41,6 @@ public class inputTeclado implements KeyListener{
                     break;
                 case KeyEvent.VK_SPACE:
                     paneljuego.getJuego().getPlayer().setJump(false);
-                    paneljuego.getJuego().getPlayer2().setJump(false);
 
                     break;
             }
@@ -70,7 +70,6 @@ public class inputTeclado implements KeyListener{
                     break;
                 case KeyEvent.VK_SPACE:
                     paneljuego.getJuego().getPlayer().setJump(true);
-                    paneljuego.getJuego().getPlayer2().setJump(true);
 
                     break;
             }
