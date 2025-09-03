@@ -321,7 +321,7 @@ public class Juego implements Runnable{
 
 
                     // ---- Enviar ----
-                    socket.send(packet);
+                    enviarArray(socket, packet.getAddress(), packet.getPort(), numeros);
                     System.out.println("Array enviado al servidor: " + Arrays.toString(numeros));
 
                     // ---- Recibir ----
