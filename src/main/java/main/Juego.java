@@ -98,15 +98,48 @@ public class Juego implements Runnable{
     public void run() {
         if (this.host) {
             try {
-                DatagramSocket socket = new DatagramSocket(5000); // servidor escucha en 5000
+                DatagramSocket socket = new DatagramSocket(5000); // servidor
                 System.out.println("Servidor UDP escuchando en puerto 5000...");
 
                 // =========================
                 // Hilo de recepción de UDP
                 // =========================
+                new Thread(() -> {
+                    byte[] buffer = new byte[1024];
+                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
+                    while (true) {
+                        try {
+                            socket.receive(packet);
 
+                            ByteBuffer bb = ByteBuffer.wrap(packet.getData(), 0, packet.getLength());
+                            int[] recibidos = new int[packet.getLength() / 4];
+                            for (int i = 0; i < recibidos.length; i++) {
+                                recibidos[i] = bb.getInt();
+                            }
 
+                            // Actualiza estado del jugador remoto de forma thread-safe
+                            synchronized(player2) {
+                                player2.setLeft(recibidos[0] == 1);
+                                player2.setUp(recibidos[1] == 1);
+                                player2.setDown(recibidos[2] == 1);
+                                player2.setRight(recibidos[3] == 1);
+                            }
+
+                            // Prepara array de respuesta con el estado del host
+                            int[] send = new int[4];
+                            send[0] = player.isLeft() ? 1 : 0;
+                            send[1] = player.isUp() ? 1 : 0;
+                            send[2] = player.isDown() ? 1 : 0;
+                            send[3] = player.isRight() ? 1 : 0;
+
+                            enviarArray(socket, packet.getAddress(), packet.getPort(), send);
+
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
 
                 // =========================
                 // Game Loop principal
@@ -114,22 +147,12 @@ public class Juego implements Runnable{
                 double TiempoPorFrame = 1000000000.0 / FPS_SET;
                 double TiempoPorUpdate = 1000000000.0 / UPS_SET;
                 long tiempoAnterior = System.nanoTime();
-
-                int frames = 0;
-                int updates = 0;
+                int frames = 0, updates = 0;
                 long ultimoCheck = System.currentTimeMillis();
-
-                double deltaU = 0;
-                double deltaF = 0;
-
-                byte[] buffer = new byte[1024];
-                int[] send = {0, 0, 0, 0, 0};
+                double deltaU = 0, deltaF = 0;
 
                 while (true) {
                     long currentTime = System.nanoTime();
-
-                    System.out.println(player.isLeft());
-
                     deltaU += (currentTime - tiempoAnterior) / TiempoPorUpdate;
                     deltaF += (currentTime - tiempoAnterior) / TiempoPorFrame;
                     tiempoAnterior = currentTime;
@@ -151,124 +174,62 @@ public class Juego implements Runnable{
                         frames = 0;
                         updates = 0;
                     }
-
-                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                    socket.receive(packet);
-
-
-                    // Reconstruir array de enteros desde bytes
-                    ByteBuffer bb = ByteBuffer.wrap(packet.getData(), 0, packet.getLength());
-                    int[] recibidos = new int[packet.getLength() / 4]; // cada int = 4 bytes
-                    for (int i = 0; i < recibidos.length; i++) {
-                        recibidos[i] = bb.getInt();
-                    }
-
-                    if (player.isLeft()){
-                        send[0] = 1;
-                    } else {
-                        send[0] = 0;
-                    }
-
-                    if (player.isUp()){
-                        send[1] = 1;
-                    } else {
-                        send[1] = 0;
-                    }
-
-
-                    if (player.isDown()){
-                        send[2] = 1;
-                    } else {
-                        send[2] = 0;
-                    }
-
-                    if (player.isRight()){
-                        send[3] = 1;
-                    } else {
-                        send[3] = 0;
-                    }
-
-                    System.out.println("Array recibido: " + Arrays.toString(recibidos));
-                    enviarArray(socket, packet.getAddress(), packet.getPort(), send);
-                    System.out.println("Array enviado: " + Arrays.toString(send));
-
-
-                    if (recibidos[0] == 1){
-                        paneljuego.getJuego().getPlayer2().setLeft(true);
-                    } else if (recibidos[0] == 0) {
-                        paneljuego.getJuego().getPlayer2().setLeft(false);
-
-                    }
-
-                    if (recibidos[1] == 1){
-                        paneljuego.getJuego().getPlayer2().setUp(true);
-
-                    } else if (recibidos[1] == 0){
-                        paneljuego.getJuego().getPlayer2().setUp(false);
-
-                    }
-
-                    if (recibidos[2] == 1){
-                        paneljuego.getJuego().getPlayer2().setDown(true);
-
-                    } else if (recibidos[2] == 0){
-                        paneljuego.getJuego().getPlayer2().setDown(false);
-
-                    }
-
-
-                    if (recibidos[3] == 1){
-                        paneljuego.getJuego().getPlayer2().setRight(true);
-
-                    } else if (recibidos[3] == 0) {
-                        paneljuego.getJuego().getPlayer2().setRight(false);
-
-                    }
-
                 }
 
             } catch (SocketException ex) {
                 throw new RuntimeException(ex);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
             }
-        }
-        else {
+        } else {
+            // =========================
+            // Cliente
+            // =========================
             try {
-                DatagramSocket socket = new DatagramSocket(); // cliente usa un puerto libre
-                InetAddress serverAddr = InetAddress.getByName("localhost"); // IP del servidor
-                int serverPort = 5000; // puerto donde escucha el servidor
+                DatagramSocket socket = new DatagramSocket(); // cliente usa puerto libre
+                InetAddress serverAddr = InetAddress.getByName("localhost");
+                int serverPort = 5000;
 
-                // Array de enteros a enviar
-                int[] numeros = {0, 0, 0, 0, 0};
-                ByteBuffer bb = ByteBuffer.allocate(4 * numeros.length);
-                for (int num : numeros) {
-                    bb.putInt(num);
-                }
-                byte[] data = bb.array();
+                // Hilo para recibir datos del servidor
+                new Thread(() -> {
+                    byte[] buffer_r = new byte[1024];
+                    DatagramPacket response = new DatagramPacket(buffer_r, buffer_r.length);
 
-                DatagramPacket packet = new DatagramPacket(data, data.length, serverAddr, serverPort);
+                    while (true) {
+                        try {
+                            socket.receive(response);
+                            ByteBuffer bbResp = ByteBuffer.wrap(response.getData(), 0, response.getLength());
+                            int elementos = response.getLength() / 4;
+                            int[] recibidos = new int[elementos];
+                            for (int i = 0; i < elementos; i++) {
+                                recibidos[i] = bbResp.getInt();
+                            }
 
+                            synchronized(player2) {
+                                player2.setLeft(recibidos[0] == 1);
+                                player2.setUp(recibidos[1] == 1);
+                                player2.setDown(recibidos[2] == 1);
+                                player2.setRight(recibidos[3] == 1);
+                            }
 
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
 
+                // =========================
+                // Game Loop principal (envío)
+                // =========================
                 double TiempoPorFrame = 1000000000.0 / FPS_SET;
                 double TiempoPorUpdate = 1000000000.0 / UPS_SET;
                 long tiempoAnterior = System.nanoTime();
-
-                int frames = 0;
-                int updates = 0;
+                int frames = 0, updates = 0;
                 long ultimoCheck = System.currentTimeMillis();
+                double deltaU = 0, deltaF = 0;
 
-                double deltaU = 0;
-                double deltaF = 0;
-
-
+                int[] numeros = new int[4];
 
                 while (true) {
                     long currentTime = System.nanoTime();
-
-                    System.out.println(player.isLeft());
-
                     deltaU += (currentTime - tiempoAnterior) / TiempoPorUpdate;
                     deltaF += (currentTime - tiempoAnterior) / TiempoPorFrame;
                     tiempoAnterior = currentTime;
@@ -291,100 +252,25 @@ public class Juego implements Runnable{
                         updates = 0;
                     }
 
+                    // Preparar array de envío
+                    numeros[0] = player.isLeft() ? 1 : 0;
+                    numeros[1] = player.isUp() ? 1 : 0;
+                    numeros[2] = player.isDown() ? 1 : 0;
+                    numeros[3] = player.isRight() ? 1 : 0;
 
+                    // Enviar al servidor
+                    enviarArray(socket, serverAddr, serverPort, numeros);
 
-
-                    if (player.isLeft()){
-                        numeros[0] = 1;
-                    } else {
-                        numeros[0] = 0;
-                    }
-
-                    if (player.isUp()){
-                        numeros[1] = 1;
-                    } else {
-                        numeros[1] = 0;
-                    }
-
-
-                    if (player.isDown()){
-                        numeros[2] = 1;
-                    } else {
-                        numeros[2] = 0;
-                    }
-
-                    if (player.isRight()){
-                        numeros[3] = 1;
-                    } else {
-                        numeros[3] = 0;
-                    }
-
-
-                    // ---- Enviar ----
-                    enviarArray(socket, packet.getAddress(), packet.getPort(), numeros);
-                    System.out.println("Array enviado al servidor: " + Arrays.toString(numeros));
-
-                    // ---- Recibir ----
-                    byte[] buffer_r = new byte[1024]; // buffer de recepción
-                    DatagramPacket response = new DatagramPacket(buffer_r, buffer_r.length);
-                    socket.receive(response); // se queda bloqueado hasta que recibe
-
-                    // ---- Reconstruir array ----
-                    ByteBuffer bbResp = ByteBuffer.wrap(response.getData(), 0, response.getLength());
-                    int elementos = response.getLength() / 4; // cada int son 4 bytes
-                    int[] recibidos = new int[elementos];
-                    for (int i = 0; i < elementos; i++) {
-                        recibidos[i] = bbResp.getInt();
-                    }
-
-                    // ---- Imprimir ----
-                    System.out.print("Array recibido: ");
-                    for (int n : recibidos) {
-                        System.out.print(n + " ");
-                    }
-                    System.out.println();
-
-                    if (recibidos[0] == 1){
-                        paneljuego.getJuego().getPlayer2().setLeft(true);
-                    } else if (recibidos[0] == 0) {
-                        paneljuego.getJuego().getPlayer2().setLeft(false);
-
-                    }
-
-                    if (recibidos[1] == 1){
-                        paneljuego.getJuego().getPlayer2().setUp(true);
-
-                    } else if (recibidos[1] == 0){
-                        paneljuego.getJuego().getPlayer2().setUp(false);
-
-                    }
-
-                    if (recibidos[2] == 1){
-                        paneljuego.getJuego().getPlayer2().setDown(true);
-
-                    } else if (recibidos[2] == 0){
-                        paneljuego.getJuego().getPlayer2().setDown(false);
-
-                    }
-
-
-                    if (recibidos[3] == 1){
-                        paneljuego.getJuego().getPlayer2().setRight(true);
-
-                    } else if (recibidos[3] == 0) {
-                        paneljuego.getJuego().getPlayer2().setRight(false);
-
-                    }
-
+                    // Para no saturar la red, puedes dormir unos milisegundos
+                    Thread.sleep(10);
                 }
 
-            } catch (SocketException ex) {
-                throw new RuntimeException(ex);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
+
 
     private void enviarArray(DatagramSocket socket, InetAddress ip, int port, int[] datos) throws IOException {
         ByteBuffer bb = ByteBuffer.allocate(datos.length * 4); // 4 bytes por int
