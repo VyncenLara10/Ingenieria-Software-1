@@ -1,11 +1,10 @@
 package main;
 
-import entities.Player;
 import gamestates.Gamestate;
+import gamestates.Menu;
+import gamestates.Playing;
 import java.awt.Graphics;
-import levels.LevelManager;
-import multiplayer.*;
-import java.io.IOException;
+
 
 
 public class Juego implements Runnable{
@@ -14,15 +13,10 @@ public class Juego implements Runnable{
     private Thread hiloJuego;
     private final int FPS_SET = 120;
     private final int UPS_SET = 200;
-    private Player player;
-    private Player player2;
-    private LevelManager levelManager;
-
-    // multiplayer
-    private boolean twoPlayers = true;   // para pruebas: true
-    private boolean isServer = false;     // decide si actúa como servidor o cliente
-    private NetworkManager network;
-
+    
+    private Playing playing;
+    private Menu menu;
+    
     public final static int TILES_DEFAULT_SIZE = 32;
     public final static float SCALE = 1.5f;
     public final static int TILES_IN_WIDTH = 26;
@@ -55,13 +49,9 @@ public class Juego implements Runnable{
     }
 
     private void initClasses() {
-        levelManager = new LevelManager(this);
-        player = new Player(200,200,(int)(64 * SCALE), (int)(40 * SCALE));
-        player.loadLvlData(levelManager.getCurrentLevel().getLevelData());
-        if (twoPlayers){
-            player2 = new Player(250,250,(int)(64 * SCALE), (int)(40 * SCALE));
-            player2.loadLvlData(levelManager.getCurrentLevel().getLevelData());
-        }
+        menu = new Menu(this);
+        playing = new Playing(this);
+
     }
 
     private void iniciarGameLoop(){
@@ -72,53 +62,15 @@ public class Juego implements Runnable{
     public void update(){
         switch(Gamestate.state){
             case MENU:
+                menu.update();
                 break;
             case PLAYING:
-                // actualizar jugador local
-                player.update();
-
-                // si hay multiplayer, mandar y recibir
-                if (twoPlayers && network != null) {
-                    if (isServer){
-                        network.send(new PlayerData(
-                            (int) player.getHitbox().x,
-                            (int) player.getHitbox().y
-                        ));
-
-                        // recibir posición remota
-                        try {
-                            PlayerData data = network.receive();
-                            if (data != null) {
-                                player2.getHitbox().x = data.x;
-                                player2.getHitbox().y = data.y;
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    } else {
-                        // enviar posición local
-                        network.send(new PlayerData(
-                            (int) player2.getHitbox().x,
-                            (int) player2.getHitbox().y
-                        ));
-
-                        // recibir posición remota
-                        try {
-                            PlayerData data = network.receive();
-                            if (data != null) {
-                                player.getHitbox().x = data.x;
-                                player.getHitbox().y = data.y;
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-
-                if (twoPlayers) player2.update();
-                levelManager.update();
+                playing.update();
                 break;
+            case OPTIONS:
+            case QUIT:
             default:
+                System.exit(0);
                 break;
         }
     }
@@ -126,11 +78,10 @@ public class Juego implements Runnable{
     public void render(Graphics g){
         switch(Gamestate.state){
             case MENU:
+                menu.draw(g);
                 break;
             case PLAYING:
-                levelManager.draw(g);
-                player.render(g);
-                if (twoPlayers) player2.render(g);
+                playing.draw(g);
                 break;
             default:
                 break;
@@ -179,15 +130,17 @@ public class Juego implements Runnable{
     }
 
     public void windowFocusLost(){
-        player.resetDirBooleans();
-        if (twoPlayers) player2.resetDirBooleans();
+        if(Gamestate.state == Gamestate.PLAYING){
+            playing.getPlayer().resetDirBooleans();
+        }
     }
-
-    public Player getPlayer(){
-        return player;
+    
+    public Menu getMenu(){
+        return menu;
     }
-
-    public Player getPlayer2(){
-        return player2;
+    
+    public Playing getPlaying(){
+        return playing;
     }
+    
 }
