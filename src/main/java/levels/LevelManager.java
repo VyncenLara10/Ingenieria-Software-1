@@ -30,14 +30,13 @@ public class LevelManager {
         }
     }
     
-    public void draw(Graphics g){
-        for(int j = 0; j < Juego.TILES_IN_HEIGHT; j++){
-            for(int i = 0; i < Juego.TILES_IN_WIDTH; i++){
-                int index = levelOne.getSpriteIndex(i,j);
-                g.drawImage(levelSprite[index], Juego.TILES_SIZE * i, Juego.TILES_SIZE * j,Juego.TILES_SIZE,Juego.TILES_SIZE, null);
-            }
-        }
-    }
+    public void draw(Graphics g, int lvlOffset) {
+		for (int j = 0; j < Juego.TILES_IN_HEIGHT; j++)
+			for (int i = 0; i < levelOne.getLevelData()[0].length; i++) {
+				int index = levelOne.getSpriteIndex(i, j);
+				g.drawImage(levelSprite[index], Juego.TILES_SIZE * i - lvlOffset, Juego.TILES_SIZE * j, Juego.TILES_SIZE, Juego.TILES_SIZE, null);
+			}
+	}
     
     public void update(){
         
