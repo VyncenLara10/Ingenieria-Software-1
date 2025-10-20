@@ -18,7 +18,7 @@ public class Player extends Entity{
     private int playerAction = IDLE;
     private boolean moving = false, attacking = false;
     private boolean left, up, right, down, jump;
-    private float playerSpeed = 2.0f;
+    private float playerSpeed = 1.0f * Juego.SCALE;
     private int[][] lvlData;
     private float xDrawOffset = 21 * Juego.SCALE;
     private float yDrawOffset = 4 * Juego.SCALE;
@@ -34,7 +34,7 @@ public class Player extends Entity{
     public Player(float x, float y, int width, int height){
         super(x,y,width, height);
         loadAnimations();
-        initHitbox(x,y,20*Juego.SCALE,27*Juego.SCALE);
+        initHitbox(x,y,(int)(20*Juego.SCALE),(int)(27*Juego.SCALE));
     }
     
     public void update(){
@@ -43,10 +43,10 @@ public class Player extends Entity{
         setAnimation();
     }
     
-    public void render(Graphics g){
-        g.drawImage(animations[playerAction][aniIndex],(int)(hitbox.x - xDrawOffset),(int)(hitbox.y - yDrawOffset),width, height,null);
-        drawHitbox(g);
-    }
+    public void render(Graphics g, int lvlOffset) {
+		g.drawImage(animations[playerAction][aniIndex], (int) (hitbox.x - xDrawOffset) - lvlOffset, (int) (hitbox.y - yDrawOffset), width, height, null);
+//		drawHitbox(g);
+	}
     
     private void updateAnimationTick() {
         aniTick++;
@@ -187,10 +187,10 @@ public class Player extends Entity{
     private void loadAnimations() {
             BufferedImage img = LoadSave.GetSpriteAtlas(LoadSave.PLAYER_ATLAS);
             
-            animations = new BufferedImage[9][6];
+            animations = new BufferedImage[5][8];
         for(int j = 0; j < animations.length; j++){
             for(int i = 0; i<animations[j].length; i++){
-                animations[j][i] = img.getSubimage(i*64,j*40,64,40);
+                animations[j][i] = img.getSubimage(i*81,j*75,81,75); //40 alto
             }
         }
           
