@@ -17,8 +17,8 @@ import static utilz.Constantes.EnemyConstants.CRABBY;
 public class LoadSave {
 
 	public static final String PLAYER_ATLAS = "player_sprites.png";
-	public static final String LEVEL_ATLAS = "outside_sprites.png";
-	public static final String LEVEL_ONE_DATA = "level_one_data_long.png";
+	public static final String LEVEL_ATLAS = "spriteslevelprueba.png";
+	public static final String LEVEL_ONE_DATA = "pruebamapatiletype.png";
 	public static final String MENU_BUTTONS = "button_atlas.png";
 	public static final String MENU_BACKGROUND = "menu_background.png";
 	public static final String PAUSE_BACKGROUND = "pause_menu.png";
@@ -72,9 +72,8 @@ public class LoadSave {
 			for (int i = 0; i < img.getWidth(); i++) {
 				Color color = new Color(img.getRGB(i, j));
 				int value = color.getRed();
-				if (value >= 48)
-					value = 0;
-				lvlData[j][i] = value;
+                                int tileType = TileMapping.getTileTypeFromRed(value);
+				lvlData[j][i] = tileType;
 			}
 		return lvlData;
 
