@@ -44,7 +44,7 @@ public class Player extends Entity {
 	private int healthBarXStart = (int) (34 * Juego.SCALE);
 	private int healthBarYStart = (int) (14 * Juego.SCALE);
 
-	private int maxHealth = 10;
+	private int maxHealth = 30;
 	private int currentHealth = maxHealth;
 	private int healthWidth = healthBarWidth;
 
@@ -278,7 +278,7 @@ public class Player extends Entity {
 	private void loadAnimations() {
             BufferedImage img = LoadSave.GetSpriteAtlas(LoadSave.PLAYER_ATLAS);
             
-            animations = new BufferedImage[5][8];
+            animations = new BufferedImage[5][7];
             for(int j = 0; j < animations.length; j++){
                 for(int i = 0; i<animations[j].length; i++){
                     animations[j][i] = img.getSubimage(i*81,j*75,81,75); //40 alto

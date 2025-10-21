@@ -59,6 +59,9 @@ public class Playing extends State implements Statemethods {
 		smallCloudsPos = new int[8];
 		for (int i = 0; i < smallCloudsPos.length; i++)
 			smallCloudsPos[i] = (int) (90 * Juego.SCALE) + rnd.nextInt((int) (100 * Juego.SCALE));
+                lightSources = new ArrayList<>();
+        addLightSource(400, 300, 20, 80);
+
 	}
 
 	private void initClasses() {
@@ -104,8 +107,9 @@ public class Playing extends State implements Statemethods {
 		drawClouds(g);
 
 		levelManager.draw(g, xLvlOffset);
-		player.render(g, xLvlOffset);
 		enemyManager.draw(g, xLvlOffset);
+                player.render(g, xLvlOffset);
+                drawLightingEffect(g);
 
 		if (paused) {
 			g.setColor(new Color(0, 0, 0, 150));
