@@ -42,8 +42,11 @@ public abstract class Enemy extends Entity {
 
 	protected void updateInAir(int[][] lvlData) {
 		if (CanMoveHere(hitbox.x, hitbox.y + fallSpeed, hitbox.width, hitbox.height, lvlData)) {
-			hitbox.y += fallSpeed;
-			fallSpeed += gravity;
+			//hitbox.y += fallSpeed;
+			//fallSpeed += gravity;
+                        inAir = false;
+			hitbox.y = GetEntityYPosUnderRoofOrAboveFloor(hitbox, fallSpeed);
+			tileY = (int) (hitbox.y / Juego.TILES_SIZE);
 		} else {
 			inAir = false;
 			hitbox.y = GetEntityYPosUnderRoofOrAboveFloor(hitbox, fallSpeed);

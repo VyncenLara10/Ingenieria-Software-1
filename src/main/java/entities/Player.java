@@ -79,7 +79,7 @@ public class Player extends Entity {
 
 		updateAttackBox();
 
-		updatePos();
+		updatePos_noGravity();
 		if (attacking)
 			checkAttack();
 		updateAnimationTick();
@@ -151,9 +151,9 @@ public class Player extends Entity {
 
 		if (inAir) {
 			if (airSpeed < 0)
-				playerAction = JUMP;
+				playerAction = IDLE;
 			else
-				playerAction = FALLING;
+				playerAction = IDLE;
 		}
 
 		if (attacking) {
@@ -218,6 +218,33 @@ public class Player extends Entity {
 			updateXPos(xSpeed);
 		moving = true;
 	}
+        
+        private void updatePos_noGravity() {
+        
+        moving = false;
+        if(!left && !right && !up && !down){
+            return;
+        }
+        
+        float xSpeed = 0, ySpeed = 0;
+        if(left && !right){
+            xSpeed=-playerSpeed;
+        } else if(right && !left) {
+            xSpeed=playerSpeed;
+        }
+        
+        if(up && !down){
+            ySpeed=-playerSpeed;
+        } else if(down && !up) {
+            ySpeed=playerSpeed;
+        }
+        
+        if(CanMoveHere(hitbox.x+xSpeed,hitbox.y+ySpeed, hitbox.width,hitbox.height,lvlData)){
+            hitbox.x += xSpeed;
+            hitbox.y += ySpeed;
+            moving = true;
+        }
+    }
 
 	private void jump() {
 		if (inAir)
