@@ -17,8 +17,8 @@ import static utilz.Constantes.EnemyConstants.CRABBY;
 public class LoadSave {
 
 	public static final String PLAYER_ATLAS = "player_sprites.png";
-	public static final String LEVEL_ATLAS = "spriteslevel.png";
-	public static final String LEVEL_ONE_DATA = "pruebamapatiletype2.png";
+	public static final String LEVEL_ATLAS = "spritesleveldefinitive.png";
+	public static final String LEVEL_ONE_DATA = "maptiletypebig.png";
 	public static final String MENU_BUTTONS = "button_atlas.png";
 	public static final String MENU_BACKGROUND = "menu_background.png";
 	public static final String PAUSE_BACKGROUND = "pause_menu.png";

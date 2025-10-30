@@ -30,7 +30,7 @@ public class HelpMethods {
 	public static boolean IsTileSolid(int xTile, int yTile, int[][] lvlData) {
 		int value = lvlData[yTile][xTile];
 
-		if (value == 1 || value == 2 || value == 4)
+		if (value == 0 || value == 4 || value == 5 || value == 7 || value == 8 || value == 9)
 			return true;
 		return false;
 	}

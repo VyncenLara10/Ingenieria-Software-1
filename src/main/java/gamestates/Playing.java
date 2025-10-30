@@ -43,7 +43,7 @@ public class Playing extends State implements Statemethods {
 	private boolean gameOver;
         
         // Linterna
-        private int playerFlashlightRadius = (int) (180 * Juego.SCALE);
+        private int playerFlashlightRadius = (int) (50 * Juego.SCALE);
         private int playerDarknessAlpha = 250;
 
         // Luz de los objetos 
