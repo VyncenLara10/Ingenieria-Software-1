@@ -43,7 +43,7 @@ public class Playing extends State implements Statemethods {
 	private boolean gameOver;
         
         // Linterna
-        private int playerFlashlightRadius = (int) (50 * Juego.SCALE);
+        private int playerFlashlightRadius = (int) (95 * Juego.SCALE);
         private int playerDarknessAlpha = 250;
 
         // Luz de los objetos 
@@ -60,7 +60,6 @@ public class Playing extends State implements Statemethods {
 		for (int i = 0; i < smallCloudsPos.length; i++)
 			smallCloudsPos[i] = (int) (90 * Juego.SCALE) + rnd.nextInt((int) (100 * Juego.SCALE));
                 lightSources = new ArrayList<>();
-        addLightSource(400, 300, 20, 80);
 
 	}
 
@@ -150,53 +149,44 @@ public class Playing extends State implements Statemethods {
 	}
 
 	@Override
-	public void keyPressed(KeyEvent e) {
-		if (gameOver)
-			gameOverOverlay.keyPressed(e);
-		else
-			switch (e.getKeyCode()) {
-			case KeyEvent.VK_A:
-				player.setLeft(true);
-				break;
-			case KeyEvent.VK_D:
-				player.setRight(true);
-				break;
-                        case KeyEvent.VK_W:
-				player.setUp(true);
-				break;
-			case KeyEvent.VK_S:
-				player.setDown(true);
-				break;
-			case KeyEvent.VK_SPACE:
-				player.setJump(true);
-				break;
-			case KeyEvent.VK_ESCAPE:
-				paused = !paused;
-				break;
-			}
-	}
+        public void keyPressed(KeyEvent e) {
+            switch(e.getKeyCode()){
+                case KeyEvent.VK_W:
+                    player.setUp(true);
+                    break;
+                case KeyEvent.VK_A:
+                    player.setLeft(true);
+                    break;
+                case KeyEvent.VK_S:
+                    player.setDown(true);
+                    break;
+                case KeyEvent.VK_D:
+                    player.setRight(true);
+                    break;
+                case KeyEvent.VK_ESCAPE:
+                    paused = !paused;
+                    break;
+            }
+        }
 
-	@Override
-	public void keyReleased(KeyEvent e) {
-		if (!gameOver)
-			switch (e.getKeyCode()) {
-			case KeyEvent.VK_A:
-				player.setLeft(false);
-				break;
-			case KeyEvent.VK_D:
-				player.setRight(false);
-				break;
-                        case KeyEvent.VK_W:
-				player.setUp(false);
-				break;
-			case KeyEvent.VK_S:
-				player.setDown(false);
-			case KeyEvent.VK_SPACE:
-				player.setJump(false);
-				break;
-			}
+        @Override
+        public void keyReleased(KeyEvent e) {
+            switch(e.getKeyCode()){
+                case KeyEvent.VK_W:
+                    player.setUp(false);
+                    break;
+                case KeyEvent.VK_A:
+                    player.setLeft(false);
+                    break;
+                case KeyEvent.VK_S:
+                    player.setDown(false);
+                    break;
+                case KeyEvent.VK_D:
+                    player.setRight(false);
+                    break;
+            }
+        }
 
-	}
 
 	public void mouseDragged(MouseEvent e) {
 		if (!gameOver)

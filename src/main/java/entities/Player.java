@@ -142,31 +142,26 @@ public class Player extends Entity {
 	}
 
 	private void setAnimation() {
-		int startAni = playerAction;
+            int startAni = playerAction;
 
-		if (moving)
-			playerAction = RUNNING;
-		else
-			playerAction = IDLE;
+            if(attacking){
+                playerAction = ATTACK_1;
+            } else if(moving){
+                if(up){
+                    playerAction = UP;
+                } else if(down){
+                    playerAction = DOWN;
+                } else {
+                    playerAction = RUNNING;
+                }
+            } else {
+                playerAction = IDLE;
+            }
 
-		if (inAir) {
-			if (airSpeed < 0)
-				playerAction = IDLE;
-			else
-				playerAction = IDLE;
-		}
-
-		if (attacking) {
-			playerAction = ATTACK_1;
-			if (startAni != ATTACK_1) {
-				aniIndex = 1;
-				aniTick = 0;
-				return;
-			}
-		}
-		if (startAni != playerAction)
-			resetAniTick();
-	}
+            if(startAni != playerAction){
+                resetAniTick();
+            }
+        }
 
 	private void resetAniTick() {
 		aniTick = 0;
@@ -292,12 +287,12 @@ public class Player extends Entity {
 			inAir = true;
 	}
 
-	public void resetDirBooleans() {
-		left = false;
-		right = false;
-		up = false;
-		down = false;
-	}
+	public void resetDirBooleans(){
+            left = false;
+            right = false;
+            up = false;
+            down = false;
+        }
 
 	public void setAttacking(boolean attacking) {
 		this.attacking = attacking;
