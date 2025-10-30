@@ -6,6 +6,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.Rectangle2D.Float;
+import java.util.Random;
 
 import static utilz.Constantes.Direcciones.*;
 
@@ -16,6 +17,12 @@ public class Crabby extends Enemy {
 	// AttackBox
 	private Rectangle2D.Float attackBox;
 	private int attackBoxOffsetX;
+
+	private Random random = new Random();
+	private int movX = 0, movY = 0;
+	private int movTimer = 0;
+	private int moveChangeInterval = 240;
+	private float movSpeed = 0.3f * Juego.SCALE;
 
 	public Crabby(float x, float y) {
 		super(x, y, CRABBY_WIDTH, CRABBY_HEIGHT, CRABBY);
@@ -42,6 +49,16 @@ public class Crabby extends Enemy {
 	}
 
 	private void updateBehavior(int[][] lvlData, Player player) {
+		movTimer++;
+		if (movTimer > moveChangeInterval) {
+			movTimer = 0;
+			moveChangeInterval = 60 + random.nextInt(180);
+			setrandomDirection();	
+		}
+
+		move(lvlData);
+		updateAttackBox();
+
 		if (firstUpdate)
 			firstUpdateCheck(lvlData);
 
@@ -75,6 +92,20 @@ public class Crabby extends Enemy {
 		}
 
 	}
+
+	private void setrandomDirection() {
+		int dir = random.nextInt(5);
+		switch (dir) {
+			case 0 -> { movX = 1;  movY = 0; }   
+            case 1 -> { movX = -1; movY = 0; }   
+            case 2 -> { movX = 0;  movY = 1; }   
+            case 3 -> { movX = 0;  movY = -1; }
+		}
+	}
+	protected void move(int[][] lvlData) {
+        hitbox.x += movX * movSpeed;
+        hitbox.y += movY * movSpeed;
+    }
 
 	public void drawAttackBox(Graphics g, int xLvlOffset) {
 		g.setColor(Color.red);
