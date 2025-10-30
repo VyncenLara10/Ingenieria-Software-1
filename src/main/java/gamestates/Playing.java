@@ -291,34 +291,62 @@ public class Playing extends State implements Statemethods {
             darkG.dispose();
             g2d.drawImage(darknessLayer, 0, 0, null);
         }
+    }
 
-        private void drawSingleLight(Graphics2D g, float centerX, float centerY, int radius, int maxAlpha) {
-            float[] dist = {0.0f, 0.7f, 1.0f};
-            Color[] colors = {
-                new Color(255, 255, 255, 255),        
-                new Color(255, 255, 255, 200),        
-                new Color(255, 255, 255, 0)          
-            };
+    @Override
+    public void mousePressed(MouseEvent e) {
+        if (paused)
+            pauseOverlay.mousePressed(e);
+    }
 
-            RadialGradientPaint gradient = new RadialGradientPaint(
-                centerX, 
-                centerY, 
-                radius,
-                dist, 
-                colors
-            );
+    @Override
+    public void mouseReleased(MouseEvent e) {
+        if (paused)
+            pauseOverlay.mouseReleased(e);
+    }
 
-            g.setPaint(gradient);
-            g.fillOval(
-                (int)(centerX - radius), 
-                (int)(centerY - radius),
-                radius * 2, 
-                radius * 2
-            );
+    @Override
+    public void mouseMoved(MouseEvent e) {
+        if (paused)
+            pauseOverlay.mouseMoved(e);
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        switch(e.getKeyCode()){
+            case KeyEvent.VK_W:
+                player.setUp(true);
+                break;
+            case KeyEvent.VK_A:
+                player.setLeft(true);
+                break;
+            case KeyEvent.VK_S:
+                player.setDown(true);
+                break;
+            case KeyEvent.VK_D:
+                player.setRight(true);
+                break;
+            case KeyEvent.VK_ESCAPE:
+                paused = !paused;
+                break;
         }
+    }
 
-        public void setPlayerFlashlightRadius(int radius) {
-            this.playerFlashlightRadius = radius;
+    @Override
+    public void keyReleased(KeyEvent e) {
+        switch(e.getKeyCode()){
+            case KeyEvent.VK_W:
+                player.setUp(false);
+                break;
+            case KeyEvent.VK_A:
+                player.setLeft(false);
+                break;
+            case KeyEvent.VK_S:
+                player.setDown(false);
+                break;
+            case KeyEvent.VK_D:
+                player.setRight(false);
+                break;
         }
 
         public void setPlayerDarknessLevel(int alpha) {
