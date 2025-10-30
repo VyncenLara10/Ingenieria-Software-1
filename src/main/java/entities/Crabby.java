@@ -66,7 +66,7 @@ public class Crabby extends Enemy {
 				newState(RUNNING);
 				break;
 			case RUNNING:
-				if (canDetectPlayer(player)) {
+				if (detectPlayer(player)) {
 					int[] outMovX = new int[1];
 					int[] outMovY = new int[1];
 					moveTowardsPlayer(player, outMovX, outMovY);
@@ -74,7 +74,7 @@ public class Crabby extends Enemy {
 					movY = outMovY[0];
 				}
 				
-				if (isPlayerCloseForAttackInAllDirections(player))
+				if (attackInAllDirections(player))
 					newState(ATTACK);
 
 				move(lvlData);
@@ -93,14 +93,14 @@ public class Crabby extends Enemy {
 		}
 	}
 
-	private boolean canDetectPlayer(Player player) {
+	private boolean detectPlayer(Player player) {
 		float distX = Math.abs(player.hitbox.x + player.hitbox.width/2 - (hitbox.x + hitbox.width/2));
 		float distY = Math.abs(player.hitbox.y + player.hitbox.height/2 - (hitbox.y + hitbox.height/2));
 		
 		return distX <= detectionRange && distY <= detectionRange;
 	}
 	
-	private boolean isPlayerCloseForAttackInAllDirections(Player player) {
+	private boolean attackInAllDirections(Player player) {
 		float distX = Math.abs(player.hitbox.x - hitbox.x);
 		float distY = Math.abs(player.hitbox.y - hitbox.y);
 		float totalDist = (float) Math.sqrt(distX * distX + distY * distY);
