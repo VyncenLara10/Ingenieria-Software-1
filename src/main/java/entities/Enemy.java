@@ -24,8 +24,6 @@ public abstract class Enemy extends Entity {
 	protected int currentHealth;
 	protected boolean active = true;
 	protected boolean attackChecked;
-	
-	protected float detectionRange = Juego.TILES_SIZE * 3;
 
 	public Enemy(float x, float y, int width, int height, int enemyType) {
 		super(x, y, width, height);
@@ -33,6 +31,7 @@ public abstract class Enemy extends Entity {
 		initHitbox(x, y, width, height);
 		maxHealth = GetMaxHealth(enemyType);
 		currentHealth = maxHealth;
+
 	}
 
 	protected void firstUpdateCheck(int[][] lvlData) {
@@ -43,7 +42,9 @@ public abstract class Enemy extends Entity {
 
 	protected void updateInAir(int[][] lvlData) {
 		if (CanMoveHere(hitbox.x, hitbox.y + fallSpeed, hitbox.width, hitbox.height, lvlData)) {
-			inAir = false;
+			//hitbox.y += fallSpeed;
+			//fallSpeed += gravity;
+                        inAir = false;
 			hitbox.y = GetEntityYPosUnderRoofOrAboveFloor(hitbox, fallSpeed);
 			tileY = (int) (hitbox.y / Juego.TILES_SIZE);
 		} else {
@@ -88,31 +89,6 @@ public abstract class Enemy extends Entity {
 		return false;
 	}
 
-	protected boolean canSeePlayerInAllDirections(Player player) {
-		float distX = Math.abs(player.hitbox.x - hitbox.x);
-		float distY = Math.abs(player.hitbox.y - hitbox.y);
-		
-		return distX <= detectionRange && distY <= detectionRange;
-	}
-
-	protected void moveTowardsPlayer(Player player, int[] outMovX, int[] outMovY) {
-		float distX = player.hitbox.x - hitbox.x;
-		float distY = player.hitbox.y - hitbox.y;
-		
-		if (Math.abs(distX) > 5) { 
-			outMovX[0] = distX > 0 ? 1 : -1;
-			walkDir = distX > 0 ? RIGHT : LEFT;
-		} else {
-			outMovX[0] = 0;
-		}
-		
-		if (Math.abs(distY) > 5) {
-			outMovY[0] = distY > 0 ? 1 : -1;
-		} else {
-			outMovY[0] = 0;
-		}
-	}
-
 	protected boolean isPlayerInRange(Player player) {
 		int absValue = (int) Math.abs(player.hitbox.x - hitbox.x);
 		return absValue <= attackDistance * 5;
@@ -141,6 +117,7 @@ public abstract class Enemy extends Entity {
 		if (attackBox.intersects(player.hitbox))
 			player.changeHealth(-GetEnemyDmg(enemyType));
 		attackChecked = true;
+
 	}
 
 	protected void updateAnimationTick() {
@@ -164,6 +141,7 @@ public abstract class Enemy extends Entity {
 			walkDir = RIGHT;
 		else
 			walkDir = LEFT;
+
 	}
 
 	public void resetEnemy() {
@@ -187,4 +165,5 @@ public abstract class Enemy extends Entity {
 	public boolean isActive() {
 		return active;
 	}
+
 }
