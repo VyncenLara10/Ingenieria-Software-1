@@ -1,15 +1,16 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package entities;
 
-import java.awt.Graphics;
-import java.awt.image.BufferedImage;
-import main.Juego;
 import static utilz.Constantes.ConstantesJugador.*;
 import static utilz.HelpMethods.*;
-import static utilz.Constantes.ConstantesJugador.GetSpriteAmount;
+
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.geom.Rectangle2D;
+import java.awt.geom.Rectangle2D.Float;
+import java.awt.image.BufferedImage;
+
+import gamestates.Playing;
+import main.Juego;
 import utilz.LoadSave;
 
 public class Player extends Entity{
@@ -131,38 +132,43 @@ public class Player extends Entity{
         up = false;
         down = false;
     }
-    
+   
     public void setAtacking(boolean attacking){
         this.attacking = attacking;
     }
 
-    public boolean isLeft() {
-        return left;
-    }
+	public void loadLvlData(int[][] lvlData) {
+		this.lvlData = lvlData;
+		if (!IsEntityOnFloor(hitbox, lvlData))
+			inAir = true;
+	}
 
-    public void setLeft(boolean left) {
-        this.left = left;
-    }
+	public void resetDirBooleans() {
+		left = false;
+		right = false;
+		up = false;
+		down = false;
+	}
 
-    public boolean isUp() {
-        return up;
-    }
+	public void setAttacking(boolean attacking) {
+		this.attacking = attacking;
+	}
 
-    public void setUp(boolean up) {
-        this.up = up;
-    }
+	public boolean isLeft() {
+		return left;
+	}
 
-    public boolean isRight() {
-        return right;
-    }
+	public void setLeft(boolean left) {
+		this.left = left;
+	}
 
-    public void setRight(boolean right) {
-        this.right = right;
-    }
+	public boolean isUp() {
+		return up;
+	}
 
-    public boolean isDown() {
-        return down;
-    }
+	public void setUp(boolean up) {
+		this.up = up;
+	}
 
     public void setDown(boolean down) {
         this.down = down;
