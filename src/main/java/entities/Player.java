@@ -61,7 +61,7 @@ public class Player extends Entity {
 		super(x, y, width, height);
 		this.playing = playing;
 		loadAnimations();
-		initHitbox(x, y, (int) (20 * Juego.SCALE), (int) (27 * Juego.SCALE));
+		initHitbox(x/2, y/2, (int) (20 * Juego.SCALE)/2, (int) (27 * Juego.SCALE)/2);
 		initAttackBox();
 	}
 
