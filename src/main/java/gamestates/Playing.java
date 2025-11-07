@@ -44,7 +44,7 @@ public class Playing extends State implements Statemethods {
         
         // Linterna
         private int playerFlashlightRadius = (int) (95 * Juego.SCALE);
-        private int playerDarknessAlpha = 250;
+        private int playerDarknessAlpha = 0;
 
         // Luz de los objetos 
         private ArrayList<LightSource> lightSources;

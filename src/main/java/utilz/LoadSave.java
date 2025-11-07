@@ -1,11 +1,14 @@
 package utilz;
 
-import java.awt.Color;
+import java.awt.*;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 
@@ -18,7 +21,7 @@ public class LoadSave {
 
 	public static final String PLAYER_ATLAS = "player_spritesdif.png";
 	public static final String LEVEL_ATLAS = "spritesleveldefinitive.png";
-	public static final String LEVEL_ONE_DATA = "maptileenemy.png";
+	public static final String LEVEL_ONE_DATA = "maptilesections.png";
 	public static final String MENU_BUTTONS = "button_atlas.png";
 	public static final String MENU_BACKGROUND = "menu_background.png";
 	public static final String PAUSE_BACKGROUND = "pause_menu.png";
@@ -64,9 +67,10 @@ public class LoadSave {
 
 	}
 
-	public static int[][] GetLevelData() {
-		BufferedImage img = GetSpriteAtlas(LEVEL_ONE_DATA);
-		int[][] lvlData = new int[img.getHeight()][img.getWidth()];
+    public static int[][] GetLevelData() {
+		//BufferedImage img = GetSpriteAtlas(LEVEL_ONE_DATA);
+        BufferedImage img = MapGenerator.generarMapaFinal(LEVEL_ONE_DATA);
+        int[][] lvlData = new int[img.getHeight()][img.getWidth()];
 
 		for (int j = 0; j < img.getHeight(); j++)
 			for (int i = 0; i < img.getWidth(); i++) {
