@@ -15,7 +15,6 @@ entities\EnemyManager.class
 levels\LevelManager.class
 utilz\Constantes$ConstantesJugador.class
 utilz\Constantes$UI$Buttons.class
-com\mycompany\ingenieria_software_1\Ingenieria_software_1.class
 multiplayer\PlayerData.class
 levels\Level.class
 ui\SoundButton.class
