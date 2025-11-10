@@ -14,7 +14,7 @@ public class LoadSave {
 
     public static final String PLAYER_ATLAS       = "player_sprites.png";
     public static final String LEVEL_ATLAS        = "spritesleveldefinitive.png";
-    public static final String LEVEL_ONE_DATA     = "maptiletypebig.png";
+    public static final String LEVEL_ONE_DATA     = "maptilesections.png";
     public static final String MENU_BUTTONS       = "button_atlas.png";
     public static final String MENU_BACKGROUND    = "menu_background.png";
     public static final String PAUSE_BACKGROUND   = "pause_menu.png";
@@ -33,19 +33,25 @@ public class LoadSave {
     }
 
     public static int[][] GetLevelData() {
-        Pixmap pm = new Pixmap(Gdx.files.internal(LEVEL_ONE_DATA));
+        Pixmap pm = MapGenerator.generarMapaFinal(LEVEL_ONE_DATA);
+
         int w = pm.getWidth();
         int h = pm.getHeight();
         int[][] lvlData = new int[h][w];
+
         for (int j = 0; j < h; j++) {
             for (int i = 0; i < w; i++) {
                 int rgba = pm.getPixel(i, j);
                 int r = (rgba >>> 24) & 0xFF;
+
                 int tileType = TileMapping.getTileTypeFromRed(r);
+
                 lvlData[j][i] = tileType;
             }
         }
-        pm.dispose();
+
+        pm.dispose(); // Liberar el Pixmap de la RAM de video
+
         return lvlData;
     }
 
@@ -82,6 +88,37 @@ public class LoadSave {
                 }
             }
         }
+        pm.dispose();
+        return list;
+    }
+
+    public static ArrayList<MapObject> GetObjects(int tileW, int tileH) {
+        Pixmap pm = new Pixmap(Gdx.files.internal(LEVEL_ONE_DATA));
+        int w = pm.getWidth();
+        int h = pm.getHeight();
+
+        ArrayList<MapObject> list = new ArrayList<>();
+
+        for (int j = 0; j < h; j++) {
+            for (int i = 0; i < w; i++) {
+                int rgba = pm.getPixel(i, j);
+
+                // Extraer el canal azul (últimos 8 bits)
+                int b = rgba & 0xFF;
+
+                if (b == 255 || b == 254 || b == 253) {
+                    int drawY = (h - 1 - j); // LibGDX invierte eje Y
+
+                    int type = 0;
+                    if (b == 255) type = 1;
+                    else if (b == 254) type = 2;
+                    else if (b == 253) type = 3;
+
+                    list.add(new MapObject(new Vector2(i * tileW, drawY * tileH), type));
+                }
+            }
+        }
+
         pm.dispose();
         return list;
     }
