@@ -20,11 +20,11 @@ public class Crabby extends Enemy {
 
     private TextureRegion[][] frames;
 
-    private float attackCooldown = 0f;
+    private float attackCooldown = 2f;
     private float attackLock = 0f;
     private float hitLock = 0f;
 
-    private float scale = 2.0f;
+    private float scale = 2.5f;
 
     private final Rectangle attackBox = new Rectangle();
 

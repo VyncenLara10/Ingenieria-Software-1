@@ -18,6 +18,8 @@ import com.chat.hellbound.utilz.Constants;
 import com.chat.hellbound.utilz.CameraController;
 import com.chat.hellbound.ui.TouchControls;
 import com.chat.hellbound.input.InputController;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 
 public class GameScreen implements Screen {
 
@@ -31,6 +33,9 @@ public class GameScreen implements Screen {
     private CameraController camController;
     private TouchControls touchControls;
     private Player player;
+
+    private final ShapeRenderer debugSR = new ShapeRenderer();
+    private final boolean DEBUG = true;
 
     public GameScreen(Main game) {
         this.game = game;
@@ -82,6 +87,13 @@ public class GameScreen implements Screen {
         enemyManager.render(batch);
         player.render(batch);
         batch.end();
+        if (DEBUG) {
+            debugSR.setProjectionMatrix(camera.combined);
+            debugSR.begin(ShapeType.Line);
+            player.renderDebug(debugSR);
+            enemyManager.renderDebug(debugSR);
+            debugSR.end();
+        }
         touchControls.render();
     }
 

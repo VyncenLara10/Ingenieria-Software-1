@@ -62,7 +62,7 @@ public class Constants {
         public static final int DEAD = 4;
 
         public static final int   ANI_SPEED        = 6;
-        public static final int   MAX_HP           = 3;
+        public static final int   MAX_HP           = 20;
         public static final int   DAMAGE           = 1;
         public static final float MOVE_SPEED       = 120f;
         public static final float AGGRO_RANGE      = 260f;
