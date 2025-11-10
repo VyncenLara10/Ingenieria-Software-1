@@ -4,6 +4,11 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.math.Vector2;
+
+import java.util.ArrayList;
+
+import static com.chat.hellbound.utilz.Constants.EnemyConstants;
 
 public class LoadSave {
 
@@ -28,13 +33,10 @@ public class LoadSave {
     }
 
     public static int[][] GetLevelData() {
-        FileHandle fh = Gdx.files.internal(LEVEL_ONE_DATA);
-        Pixmap pm = new Pixmap(fh);
-
+        Pixmap pm = new Pixmap(Gdx.files.internal(LEVEL_ONE_DATA));
         int w = pm.getWidth();
         int h = pm.getHeight();
         int[][] lvlData = new int[h][w];
-
         for (int j = 0; j < h; j++) {
             for (int i = 0; i < w; i++) {
                 int rgba = pm.getPixel(i, j);
@@ -46,4 +48,42 @@ public class LoadSave {
         pm.dispose();
         return lvlData;
     }
+
+    public static ArrayList<Vector2> GetCrabs(int tileW, int tileH) {
+        Pixmap pm = new Pixmap(Gdx.files.internal(LEVEL_ONE_DATA));
+        int w = pm.getWidth();
+        int h = pm.getHeight();
+        ArrayList<Vector2> list = new ArrayList<>();
+
+        for (int j = 0; j < h; j++) {
+            for (int i = 0; i < w; i++) {
+                int rgba = pm.getPixel(i, j);
+                int g = (rgba >>> 16) & 0xFF;
+
+                if (g == Constants.EnemyConstants.CRABBY) {
+                    boolean upIsCrabby   = false;
+                    boolean leftIsCrabby = false;
+
+                    if (j > 0) {
+                        int rgbaUp = pm.getPixel(i, j - 1);
+                        int gUp = (rgbaUp >>> 16) & 0xFF;
+                        upIsCrabby = (gUp == Constants.EnemyConstants.CRABBY);
+                    }
+                    if (i > 0) {
+                        int rgbaLeft = pm.getPixel(i - 1, j);
+                        int gLeft = (rgbaLeft >>> 16) & 0xFF;
+                        leftIsCrabby = (gLeft == Constants.EnemyConstants.CRABBY);
+                    }
+
+                    if (!upIsCrabby && !leftIsCrabby) {
+                        int drawY = (h - 1 - j); // invertir Y una sola vez
+                        list.add(new Vector2(i * tileW, drawY * tileH));
+                    }
+                }
+            }
+        }
+        pm.dispose();
+        return list;
+    }
+
 }

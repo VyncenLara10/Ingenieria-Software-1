@@ -9,11 +9,15 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 import com.chat.hellbound.entities.Player;
+import com.chat.hellbound.entities.EnemyManager;
+import com.chat.hellbound.entities.EnemyShared;
 import com.chat.hellbound.input.InputController;
 import com.chat.hellbound.levels.LevelManager;
 import com.chat.hellbound.utilz.Assets;
 import com.chat.hellbound.utilz.Constants;
 import com.chat.hellbound.utilz.CameraController;
+import com.chat.hellbound.ui.TouchControls;
+import com.chat.hellbound.input.InputController;
 
 public class GameScreen implements Screen {
 
@@ -23,9 +27,10 @@ public class GameScreen implements Screen {
     private final Viewport viewport;
 
     private LevelManager levelManager;
+    private EnemyManager enemyManager;
     private CameraController camController;
-
-    private final Player player;
+    private TouchControls touchControls;
+    private Player player;
 
     public GameScreen(Main game) {
         this.game = game;
@@ -34,16 +39,20 @@ public class GameScreen implements Screen {
         this.camera = new OrthographicCamera();
         this.viewport = new FitViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT, camera);
         this.viewport.apply();
+        this.touchControls = new TouchControls();
         camera.position.set(Constants.WORLD_WIDTH / 2f, Constants.WORLD_HEIGHT / 2f, 0f);
 
         Assets.load();
 
         levelManager = new LevelManager();
-        this.player = new Player(140, 210, levelManager);
+
+        enemyManager = new EnemyManager(levelManager);
+
+        this.player = new Player(700, 5800, levelManager);
+        EnemyShared.hookPlayer(player);
 
         float worldW = levelManager.getWorldWidthPx();
         float worldH = levelManager.getWorldHeightPx();
-
         camController = new CameraController(
             camera,
             worldW, worldH,
@@ -56,6 +65,7 @@ public class GameScreen implements Screen {
     private void update(float dt) {
         InputController.update();
         player.update(dt);
+        enemyManager.update(dt, player);
         camController.update(dt);
     }
 
@@ -69,11 +79,16 @@ public class GameScreen implements Screen {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         levelManager.draw(batch, 0f);
+        enemyManager.render(batch);
         player.render(batch);
         batch.end();
+        touchControls.render();
     }
 
-    @Override public void resize(int width, int height) { viewport.update(width, height, true); }
+    @Override public void resize(int width, int height) {
+        viewport.update(width, height, true);
+        InputController.invalidateLayout();
+    }
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void show() {}
@@ -84,5 +99,6 @@ public class GameScreen implements Screen {
         batch.dispose();
         levelManager.dispose();
         Assets.dispose();
+        touchControls.dispose();
     }
 }

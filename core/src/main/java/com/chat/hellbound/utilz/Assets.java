@@ -11,13 +11,23 @@ public class Assets {
         if (manager != null) return;
         manager = new AssetManager();
 
-        manager.load("player_sprites.png", Texture.class);
+        manager.load(LoadSave.PLAYER_ATLAS, Texture.class);
+        manager.load(LoadSave.LEVEL_ATLAS, Texture.class);
+        manager.load(LoadSave.CRABBY_SPRITE, Texture.class);
 
         manager.finishLoading();
     }
 
     public static Texture getPlayerAtlas() {
-        return manager.get("player_sprites.png", Texture.class);
+        return manager.get(LoadSave.PLAYER_ATLAS, Texture.class);
+    }
+
+    public static Texture getLevelAtlas() {
+        return manager.get(LoadSave.LEVEL_ATLAS, Texture.class);
+    }
+
+    public static Texture getCrabbyAtlas() {
+        return manager.get(LoadSave.CRABBY_SPRITE, Texture.class);
     }
 
     public static void dispose() {

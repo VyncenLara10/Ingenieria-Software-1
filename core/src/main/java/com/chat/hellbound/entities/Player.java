@@ -3,34 +3,32 @@ package com.chat.hellbound.entities;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-
 import com.chat.hellbound.utilz.CameraController.CameraTarget;
 import static com.chat.hellbound.utilz.Constants.PlayerConstants.*;
-
 import com.chat.hellbound.input.InputController;
+import com.chat.hellbound.levels.LevelManager;
 import com.chat.hellbound.utilz.Assets;
 import com.chat.hellbound.utilz.HelpMethods;
-import com.chat.hellbound.levels.LevelManager;
+import com.chat.hellbound.utilz.TextureUtils;
 
 public class Player extends Entity implements CameraTarget {
 
     private TextureRegion[][] grid;
     private int playerAction = IDLE;
-
-    private int aniIndex = 0;
-    private int aniTick  = 0;
-    private int aniSpeed = ANI_SPEED;
-
-    private float vx, vy;
+    private int aniIndex = 0, aniTick = 0, aniSpeed = ANI_SPEED;
+    private float vx = 0f, vy = 0f;
     private boolean facingRight = true;
-
-    private float scale = 2.50f;
-
+    private float scale = 2.5f;
     private final LevelManager levelManager;
     private int[][] lvlData;
     private int tileW, tileH;
-
+    private int hp = MAX_HP;
+    private boolean dead = false;
+    private final Rectangle attackBox = new Rectangle();
+    private float attackCd = 0f;
+    private float attackActiveTimer = 0f;
     private final Vector2 camFocus = new Vector2();
 
     public Player(float startX, float startY, LevelManager levelManager) {
@@ -38,9 +36,7 @@ public class Player extends Entity implements CameraTarget {
         this.lvlData = levelManager.getLevelData();
         this.tileW = levelManager.getTileWidth();
         this.tileH = levelManager.getTileHeight();
-
         loadAnimations();
-
         float hbW = FRAME_W * scale;
         float hbH = FRAME_H * scale;
         initHitbox(startX, startY, hbW, hbH);
@@ -48,52 +44,9 @@ public class Player extends Entity implements CameraTarget {
 
     private void loadAnimations() {
         Texture atlas = Assets.getPlayerAtlas();
+        TextureUtils.prepareTexture(atlas);
         grid = TextureRegion.split(atlas, FRAME_W, FRAME_H);
-    }
-
-    public void update(float dt) {
-        float ix = InputController.xAxis;
-        float iy = InputController.yAxis;
-
-        vx = ix * MOVE_SPEED;
-        vy = iy * MOVE_SPEED;
-
-        float newX = hitbox.x + vx * dt;
-        if (HelpMethods.CanMoveHere(newX, hitbox.y, hitbox.width, hitbox.height, lvlData, tileW, tileH)) {
-            hitbox.x = newX;
-        } else {
-            hitbox.x = HelpMethods.GetEntityXPosNextToWall(hitbox, vx * dt, lvlData, tileW, tileH);
-            vx = 0f;
-        }
-
-        float newY = hitbox.y + vy * dt;
-        if (HelpMethods.CanMoveHere(hitbox.x, newY, hitbox.width, hitbox.height, lvlData, tileW, tileH)) {
-            hitbox.y = newY;
-        } else {
-            hitbox.y = HelpMethods.GetEntityYPosUnderRoofOrAboveFloor(hitbox, vy * dt, lvlData, tileW, tileH);
-            vy = 0f;
-        }
-
-        if (ix > 0.1f)  facingRight = true;
-        if (ix < -0.1f) facingRight = false;
-
-        int desiredAction = (Math.abs(ix) > 0.05f || Math.abs(iy) > 0.05f) ? RUNNING : IDLE;
-        setAction(desiredAction);
-
-        updateAnimationTick();
-    }
-
-    public void render(SpriteBatch batch) {
-        TextureRegion frame = getCurrentFrame();
-
-        float w = FRAME_W * scale;
-        float h = FRAME_H * scale;
-
-        if (facingRight) {
-            batch.draw(frame, hitbox.x, hitbox.y, w, h);
-        } else {
-            batch.draw(frame, hitbox.x + w, hitbox.y, -w, h);
-        }
+        TextureUtils.fixBleeding(grid);
     }
 
     private TextureRegion getCurrentFrame() {
@@ -127,8 +80,59 @@ public class Player extends Entity implements CameraTarget {
         }
     }
 
-    private int clamp(int v, int lo, int hi) {
-        return Math.max(lo, Math.min(hi, v));
+    public void update(float dt) {
+        InputController.update();
+        float ix = InputController.xAxis;
+        float iy = InputController.yAxis;
+        vx = ix * MOVE_SPEED;
+        vy = iy * MOVE_SPEED;
+        float nx = hitbox.x + vx * dt;
+        if (HelpMethods.CanMoveHere(nx, hitbox.y, hitbox.width, hitbox.height, lvlData, tileW, tileH)) {
+            hitbox.x = nx;
+        } else {
+            hitbox.x = HelpMethods.GetEntityXPosNextToWall(hitbox, vx * dt, lvlData, tileW, tileH);
+            vx = 0f;
+        }
+        float ny = hitbox.y + vy * dt;
+        if (HelpMethods.CanMoveHere(hitbox.x, ny, hitbox.width, hitbox.height, lvlData, tileW, tileH)) {
+            hitbox.y = ny;
+        } else {
+            hitbox.y = HelpMethods.GetEntityYPosUnderRoofOrAboveFloor(hitbox, vy * dt, lvlData, tileW, tileH);
+            vy = 0f;
+        }
+        if (ix > 0.1f)  facingRight = true;
+        if (ix < -0.1f) facingRight = false;
+        int desiredAction = (Math.abs(ix) > 0.05f || Math.abs(iy) > 0.05f) ? RUNNING : IDLE;
+        setAction(desiredAction);
+
+        attackCd = Math.max(0f, attackCd - dt);
+        if (attackActiveTimer > 0f) {
+            attackActiveTimer -= dt;
+            if (attackActiveTimer <= 0f) {
+                attackActiveTimer = 0f;
+                attackBox.set(0, 0, 0, 0);
+            }
+        }
+        if (InputController.attackPressedThisFrame() && attackCd == 0f) {
+            float w = FRAME_W * scale * 0.75f;
+            float h = FRAME_H * scale * 0.60f;
+            float ax = facingRight ? (hitbox.x + hitbox.width) : (hitbox.x - w);
+            float ay = hitbox.y + hitbox.height * 0.25f;
+            attackBox.set(ax, ay, w, h);
+            attackActiveTimer = 0.18f;
+            attackCd = ATTACK_COOLDOWN;
+            setAction(ATTACK_1);
+        }
+
+        updateAnimationTick();
+    }
+
+    public void render(SpriteBatch batch) {
+        TextureRegion frame = getCurrentFrame();
+        float w = FRAME_W * scale;
+        float h = FRAME_H * scale;
+        float scaleX = facingRight ? 1f : -1f;
+        batch.draw(frame, hitbox.x, hitbox.y, w * 0.5f, 0f, w, h, scaleX, 1f, 0f);
     }
 
     @Override
@@ -139,14 +143,35 @@ public class Player extends Entity implements CameraTarget {
         return camFocus;
     }
 
+    public void applyDamage(int dmg) {
+        if (dead) return;
+        hp -= dmg;
+        if (hp <= 0) { hp = 0; dead = true; }
+    }
+
+    public boolean isDead() { return dead; }
+    public int getHp() { return hp; }
+    public int getMaxHp() { return MAX_HP; }
+
+    public boolean hasAttackBox() {
+        return attackActiveTimer > 0f && attackBox.width > 0 && attackBox.height > 0;
+    }
+
+    public Rectangle getAttackBox() {
+        return attackBox;
+    }
+
+    private int clamp(int v, int lo, int hi) { return Math.max(lo, Math.min(hi, v)); }
+
     public void setScale(float scale) {
-        // actualizar también el hitbox si cambias la escala en runtime
         float cx = hitbox.x + hitbox.width * 0.5f;
         float cy = hitbox.y + hitbox.height * 0.5f;
         this.scale = scale;
         hitbox.setSize(FRAME_W * scale, FRAME_H * scale);
         hitbox.setCenter(cx, cy);
     }
+
+    public Rectangle getHitbox() { return hitbox; }
 
     public void refreshLevelRefs() {
         this.lvlData = levelManager.getLevelData();
