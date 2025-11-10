@@ -7,19 +7,18 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 
 import com.chat.hellbound.entities.Player;
 import com.chat.hellbound.entities.EnemyManager;
 import com.chat.hellbound.entities.EnemyShared;
-import com.chat.hellbound.input.InputController;
 import com.chat.hellbound.levels.LevelManager;
 import com.chat.hellbound.utilz.Assets;
 import com.chat.hellbound.utilz.Constants;
 import com.chat.hellbound.utilz.CameraController;
 import com.chat.hellbound.ui.TouchControls;
 import com.chat.hellbound.input.InputController;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 
 public class GameScreen implements Screen {
 
@@ -50,7 +49,6 @@ public class GameScreen implements Screen {
         Assets.load();
 
         levelManager = new LevelManager();
-
         enemyManager = new EnemyManager(levelManager);
 
         this.player = new Player(700, 5800, levelManager);
@@ -87,6 +85,7 @@ public class GameScreen implements Screen {
         enemyManager.render(batch);
         player.render(batch);
         batch.end();
+
         if (DEBUG) {
             debugSR.setProjectionMatrix(camera.combined);
             debugSR.begin(ShapeType.Line);
@@ -94,6 +93,7 @@ public class GameScreen implements Screen {
             enemyManager.renderDebug(debugSR);
             debugSR.end();
         }
+
         touchControls.render();
     }
 
@@ -105,12 +105,12 @@ public class GameScreen implements Screen {
     @Override public void resume() {}
     @Override public void show() {}
     @Override public void hide() {}
-
     @Override
     public void dispose() {
         batch.dispose();
         levelManager.dispose();
         Assets.dispose();
         touchControls.dispose();
+        debugSR.dispose();
     }
 }
