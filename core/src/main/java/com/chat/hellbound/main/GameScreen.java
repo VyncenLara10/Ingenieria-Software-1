@@ -14,6 +14,7 @@ import com.chat.hellbound.entities.Player;
 import com.chat.hellbound.entities.EnemyManager;
 import com.chat.hellbound.entities.EnemyShared;
 import com.chat.hellbound.levels.LevelManager;
+import com.chat.hellbound.objects.InteractiveObject;
 import com.chat.hellbound.utilz.Assets;
 import com.chat.hellbound.utilz.Constants;
 import com.chat.hellbound.utilz.CameraController;
@@ -29,6 +30,8 @@ public class GameScreen implements Screen {
 
     private LevelManager levelManager;
     private EnemyManager enemyManager;
+    private InteractiveObject interactiveObject;
+    private boolean allCollectedTriggered = false;
     private CameraController camController;
     private TouchControls touchControls;
     private Player player;
@@ -50,6 +53,7 @@ public class GameScreen implements Screen {
 
         levelManager = new LevelManager();
         enemyManager = new EnemyManager(levelManager);
+        interactiveObject = new InteractiveObject(levelManager);
 
         this.player = new Player(700, 5800, levelManager);
         EnemyShared.hookPlayer(player);
@@ -69,6 +73,11 @@ public class GameScreen implements Screen {
         InputController.update();
         player.update(dt);
         enemyManager.update(dt, player);
+        interactiveObject.update(dt);
+        if (!allCollectedTriggered && interactiveObject.allCollected()) {
+            allCollectedTriggered = true;
+            System.out.println("Todos los objetos recolectados, cambiando mapa...");
+        }
         camController.update(dt);
     }
 
@@ -83,6 +92,8 @@ public class GameScreen implements Screen {
         batch.begin();
         levelManager.draw(batch, 0f);
         enemyManager.render(batch);
+        interactiveObject.render(batch);
+
         player.render(batch);
         batch.end();
 

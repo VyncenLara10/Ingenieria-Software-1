@@ -93,30 +93,41 @@ public class Player extends Entity implements CameraTarget {
         vx = ix * MOVE_SPEED;
         vy = iy * MOVE_SPEED;
 
-        float nx = hitbox.x + vx * dt;
-        if (HelpMethods.CanMoveHere(nx, hitbox.y, hitbox.width, hitbox.height, lvlData, tileW, tileH)) {
-            hitbox.x = nx;
-        } else {
-            hitbox.x = HelpMethods.GetEntityXPosNextToWall(hitbox, vx * dt, lvlData, tileW, tileH);
-            vx = 0f;
+        // --- Movimiento horizontal ---
+        if (vx != 0) {
+            float nx = hitbox.x + vx * dt;
+            if (HelpMethods.CanMoveHere(nx, hitbox.y, hitbox.width, hitbox.height, lvlData, tileW, tileH)) {
+                hitbox.x = nx;
+            } else {
+                // Ajustar justo al borde del obstáculo sin retroceder
+                hitbox.x = HelpMethods.GetEntityXPosNextToWall(hitbox, vx * dt, lvlData, tileW, tileH);
+                vx = 0f;
+            }
         }
 
-        float ny = hitbox.y + vy * dt;
-        if (HelpMethods.CanMoveHere(hitbox.x, ny, hitbox.width, hitbox.height, lvlData, tileW, tileH)) {
-            hitbox.y = ny;
-        } else {
-            hitbox.y = HelpMethods.GetEntityYPosUnderRoofOrAboveFloor(hitbox, vy * dt, lvlData, tileW, tileH);
-            vy = 0f;
+        // --- Movimiento vertical ---
+        if (vy != 0) {
+            float ny = hitbox.y + vy * dt;
+            if (HelpMethods.CanMoveHere(hitbox.x, ny, hitbox.width, hitbox.height, lvlData, tileW, tileH)) {
+                hitbox.y = ny;
+            } else {
+                hitbox.y = HelpMethods.GetEntityYPosUnderRoofOrAboveFloor(hitbox, vy * dt, lvlData, tileW, tileH);
+                vy = 0f;
+            }
         }
 
+        // --- Dirección del personaje ---
         if (ix > 0.1f)  facingRight = true;
         if (ix < -0.1f) facingRight = false;
 
+        // --- Estado de animación ---
         int desiredAction = (Math.abs(ix) > 0.05f || Math.abs(iy) > 0.05f) ? RUNNING : IDLE;
         setAction(desiredAction);
 
+        // --- Cooldown de ataque ---
         attackCd = Math.max(0f, attackCd - dt);
 
+        // --- Ataque ---
         if (InputController.attackPressedThisFrame() && attackCd == 0f) {
             attackActiveTimer = 0.22f;
             attackCd = ATTACK_COOLDOWN;
@@ -148,6 +159,7 @@ public class Player extends Entity implements CameraTarget {
 
         updateAnimationTick();
     }
+
 
     public void render(SpriteBatch batch) {
         TextureRegion frame = getCurrentFrame();

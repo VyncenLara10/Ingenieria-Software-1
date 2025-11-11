@@ -14,6 +14,9 @@ public class Assets {
         manager.load(LoadSave.PLAYER_ATLAS, Texture.class);
         manager.load(LoadSave.LEVEL_ATLAS, Texture.class);
         manager.load(LoadSave.CRABBY_SPRITE, Texture.class);
+        manager.load(LoadSave.WIN_OBJ1_MAP1, Texture.class);
+        manager.load(LoadSave.WIN_OBJ2_MAP1, Texture.class);
+        manager.load(LoadSave.WIN_OBJ3_MAP1, Texture.class);
 
         manager.finishLoading();
     }
@@ -28,6 +31,13 @@ public class Assets {
 
     public static Texture getCrabbyAtlas() {
         return manager.get(LoadSave.CRABBY_SPRITE, Texture.class);
+    }
+
+    public static Texture getWinObjectAtlas(int type) {
+        if (type == 1) return manager.get(LoadSave.WIN_OBJ1_MAP1, Texture.class);
+        if (type == 2) return manager.get(LoadSave.WIN_OBJ2_MAP1, Texture.class);
+        if (type == 3) return manager.get(LoadSave.WIN_OBJ3_MAP1, Texture.class);
+        return manager.get(LoadSave.WIN_OBJ1_MAP1, Texture.class);
     }
 
     public static void dispose() {

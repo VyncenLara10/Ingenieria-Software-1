@@ -11,7 +11,7 @@ public class MapGenerator {
 
     private static final int FRAGMENT_ROWS = 8;
     private static final int FRAGMENT_COLS = 8;
-    private static final int FINAL_GRID_SIZE = 25;
+    private static final int FINAL_GRID_SIZE = 8;
     private static final int AVOID_EDGE = 1;
     private static final Random rand = new Random();
 

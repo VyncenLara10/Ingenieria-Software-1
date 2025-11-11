@@ -28,6 +28,7 @@ public class TileMapping {
 
     public static boolean isSolid(int id) {
         switch (id) {
+            case TREE:
             case ROCK1:
             case ROCK2:
             case TRUNK1:
