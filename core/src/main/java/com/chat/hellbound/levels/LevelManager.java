@@ -12,8 +12,8 @@ public class LevelManager {
     private final TextureRegion[] slots;
     private Level currentLevel;
 
-    public LevelManager() {
-        atlas = LoadSave.GetSpriteAtlas(LoadSave.LEVEL_ATLAS);
+    public LevelManager(Texture atl) {
+        atlas = atl;
 
         atlas.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
 
@@ -72,12 +72,12 @@ public class LevelManager {
 
     public int getWorldWidthPx() {
         int w = currentLevel != null ? currentLevel.getWidth() : 0;
-        return w * slots[0].getRegionWidth();   // cada celda usa el ancho NATIVO del sprite
+        return w * slots[0].getRegionWidth();
     }
 
     public int getWorldHeightPx() {
         int h = currentLevel != null ? currentLevel.getHeight() : 0;
-        return h * slots[0].getRegionHeight();  // alto nativo
+        return h * slots[0].getRegionHeight();
     }
 
     public int[][] getLevelData() {
