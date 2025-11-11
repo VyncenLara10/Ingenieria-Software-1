@@ -17,6 +17,9 @@ public class Assets {
         manager.load(LoadSave.WIN_OBJ1_MAP1, Texture.class);
         manager.load(LoadSave.WIN_OBJ2_MAP1, Texture.class);
         manager.load(LoadSave.WIN_OBJ3_MAP1, Texture.class);
+        manager.load(LoadSave.WIN_OBJ1_MAP2, Texture.class);
+        manager.load(LoadSave.WIN_OBJ2_MAP2, Texture.class);
+        manager.load(LoadSave.WIN_OBJ3_MAP2, Texture.class);
 
         manager.finishLoading();
     }
@@ -33,10 +36,17 @@ public class Assets {
         return manager.get(LoadSave.CRABBY_SPRITE, Texture.class);
     }
 
-    public static Texture getWinObjectAtlas(int type) {
-        if (type == 1) return manager.get(LoadSave.WIN_OBJ1_MAP1, Texture.class);
-        if (type == 2) return manager.get(LoadSave.WIN_OBJ2_MAP1, Texture.class);
-        if (type == 3) return manager.get(LoadSave.WIN_OBJ3_MAP1, Texture.class);
+    public static Texture getWinObjectAtlas(int level, int type) {
+        if (level == 1) {
+            if (type == 1) return manager.get(LoadSave.WIN_OBJ1_MAP1, Texture.class);
+            if (type == 2) return manager.get(LoadSave.WIN_OBJ2_MAP1, Texture.class);
+            if (type == 3) return manager.get(LoadSave.WIN_OBJ3_MAP1, Texture.class);
+        }
+        if (level == 2) {
+            if (type == 1) return manager.get(LoadSave.WIN_OBJ1_MAP2, Texture.class);
+            if (type == 2) return manager.get(LoadSave.WIN_OBJ2_MAP2, Texture.class);
+            if (type == 3) return manager.get(LoadSave.WIN_OBJ3_MAP2, Texture.class);
+        }
         return manager.get(LoadSave.WIN_OBJ1_MAP1, Texture.class);
     }
 

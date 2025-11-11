@@ -24,7 +24,9 @@ public class WinObject {
     public WinObject(MapObject ob, LevelManager lm) {
         this.levelManager = lm;
 
-        Texture tex = Assets.getWinObjectAtlas(ob.type);
+        int level = 1;
+
+        Texture tex = Assets.getWinObjectAtlas(level, ob.type);
         TextureUtils.prepareTexture(tex);
 
         TextureRegion region = new TextureRegion(tex);

@@ -21,6 +21,9 @@ public class LoadSave {
     public static  final String WIN_OBJ1_MAP1     = "dados.png";
     public static  final String WIN_OBJ2_MAP1     = "retro.png";
     public static  final String WIN_OBJ3_MAP1     = "selfone.png";
+    public static  final String WIN_OBJ1_MAP2     = "objetomapa2.png";
+    public static  final String WIN_OBJ2_MAP2     = "objeto2mapa2.png";
+    public static  final String WIN_OBJ3_MAP2     = "objeto3mapa2.png";
     public static final String MENU_BUTTONS       = "button_atlas.png";
     public static final String MENU_BACKGROUND    = "menu_background.png";
     public static final String PAUSE_BACKGROUND   = "pause_menu.png";
