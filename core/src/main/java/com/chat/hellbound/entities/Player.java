@@ -213,7 +213,10 @@ public class Player extends Entity implements CameraTarget {
     public void applyDamage(int dmg) {
         if (dead) return;
         hp -= dmg;
-        if (hp <= 0) { hp = 0; dead = true; }
+        if (hp <= 0) {
+            hp = 0;
+            dead = true;
+        }
     }
 
     public boolean isDead() { return dead; }
