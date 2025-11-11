@@ -20,7 +20,7 @@ public class Main extends Game {
                 setScreen(new MenuScreen(this));
                 break;
             case PLAYING:
-                setScreen(new GameScreen(this));
+                setScreen(new GameScreen(this, 1));
                 break;
             case MULTIPLAYER:
             case OPTIONS:

@@ -12,18 +12,18 @@ public class InteractiveObject {
     private final LevelManager levelManager;
     private final ArrayList<WinObject> winObjects = new ArrayList<>();
 
-    public InteractiveObject(LevelManager lm) {
+    public InteractiveObject(LevelManager lm, int level) {
         this.levelManager = lm;
-        spawnObjects();
+        spawnObjects(level);
     }
 
-    private void spawnObjects() {
+    private void spawnObjects(int level) {
         int tileW = levelManager.getTileWidth();
         int tileH = levelManager.getTileHeight();
         ArrayList<MapObject> spawns = LoadSave.GetObjects(tileW, tileH);
 
         for (MapObject p : spawns) {
-            winObjects.add(new WinObject(p, levelManager));
+            winObjects.add(new WinObject(p, levelManager, level));
         }
     }
 

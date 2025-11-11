@@ -21,10 +21,8 @@ public class WinObject {
     private static final float SCALE = 0.2f;
     private static final float INTERACT_RANGE = 40f;
 
-    public WinObject(MapObject ob, LevelManager lm) {
+    public WinObject(MapObject ob, LevelManager lm, int level) {
         this.levelManager = lm;
-
-        int level = 1;
 
         Texture tex = Assets.getWinObjectAtlas(level, ob.type);
         TextureUtils.prepareTexture(tex);
