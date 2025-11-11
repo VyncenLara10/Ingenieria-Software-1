@@ -2,6 +2,7 @@ package com.chat.hellbound.main;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -27,12 +28,11 @@ public class MenuScreen implements Screen {
     private GlyphLayout layout;
     private final Vector3 touch = new Vector3();
 
-    // Estado: ¿estamos mostrando la selección de nivel?
+    // Estado: ¿mostrando selección de nivel?
     private boolean showLevelSelect = false;
 
-    // Botones del menú principal (los "viejos")
+    // Botones del menú principal (sin "Opciones")
     private Rectangle btnPlay;
-    private Rectangle btnOptions;
     private Rectangle btnMultiplayer;
     private Rectangle btnExit;
 
@@ -40,6 +40,15 @@ public class MenuScreen implements Screen {
     private Rectangle btnBosque;
     private Rectangle btnTeatro;
     private Rectangle btnAtras;
+
+    // Colores de estilo
+    private final Color bgTop = new Color(0.07f, 0.07f, 0.09f, 1f);
+    private final Color bgBottom = new Color(0.10f, 0.10f, 0.14f, 1f);
+    private final Color btnBorder = new Color(0.95f, 0.15f, 0.15f, 1f); // rojo
+    private final Color btnFill = new Color(0.14f, 0.14f, 0.18f, 1f);
+    private final Color btnFillHover = new Color(0.18f, 0.18f, 0.23f, 1f);
+    private final Color titleColor = new Color(0.95f, 0.95f, 0.98f, 1f);
+    private final Color textColor = new Color(0.92f, 0.92f, 0.95f, 1f);
 
     public MenuScreen(Main game) {
         this.game = game;
@@ -55,7 +64,7 @@ public class MenuScreen implements Screen {
 
         batch = new SpriteBatch();
         sr = new ShapeRenderer();
-        font = new BitmapFont(); // usa default font (asegúrate de tenerla o cambia por tu fuente)
+        font = new BitmapFont(); // usa default; reemplaza por tu propia fuente si la tienes
         layout = new GlyphLayout();
 
         // Layout de botones del menú principal
@@ -64,10 +73,10 @@ public class MenuScreen implements Screen {
         float gap = 22f;
         float startY = Constants.WORLD_HEIGHT * 0.55f;
 
-        btnPlay        = new Rectangle((Constants.WORLD_WIDTH - bw)/2f, startY, bw,      bh);
+        btnPlay        = new Rectangle((Constants.WORLD_WIDTH - bw)/2f, startY, bw, bh);
         btnMultiplayer = new Rectangle((Constants.WORLD_WIDTH - bw)/2f, startY - (bh+gap)*1, bw, bh);
-        btnOptions     = new Rectangle((Constants.WORLD_WIDTH - bw)/2f, startY - (bh+gap)*2, bw, bh);
-        btnExit        = new Rectangle((Constants.WORLD_WIDTH - bw)/2f, startY - (bh+gap)*3, bw, bh);
+        // btnOptions eliminado
+        btnExit        = new Rectangle((Constants.WORLD_WIDTH - bw)/2f, startY - (bh+gap)*2, bw, bh);
 
         // Layout de botones de selección de nivel
         float selWidth = 360f;
@@ -84,31 +93,36 @@ public class MenuScreen implements Screen {
     public void render(float delta) {
         handleInput();
 
-        Gdx.gl.glClearColor(0.07f, 0.07f, 0.09f, 1f);
+        Gdx.gl.glClearColor(bgTop.r, bgTop.g, bgTop.b, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Fondo simple
+        // Fondo con “vignette” simple (dos capas rectangulares)
         sr.setProjectionMatrix(cam.combined);
         sr.begin(ShapeRenderer.ShapeType.Filled);
-        sr.setColor(0.10f, 0.10f, 0.14f, 1f);
+        // base
+        sr.setColor(bgBottom);
         sr.rect(0, 0, Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT);
+        // banda superior ligeramente más oscura
+        sr.setColor(bgTop);
+        sr.rect(0, Constants.WORLD_HEIGHT * 0.75f, Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT * 0.25f);
+        // banda inferior
+        sr.setColor(new Color(bgTop.r, bgTop.g, bgTop.b, 1f));
+        sr.rect(0, 0, Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT * 0.12f);
         sr.end();
 
+        // Título
         batch.setProjectionMatrix(cam.combined);
         batch.begin();
-
-        // Título
         String title = showLevelSelect ? "Selecciona un nivel" : "Hellbound";
+        font.setColor(titleColor);
         layout.setText(font, title);
         font.draw(batch, title, (Constants.WORLD_WIDTH - layout.width)/2f, Constants.WORLD_HEIGHT * 0.82f);
-
         batch.end();
 
         // Dibujo de botones según estado
         if (!showLevelSelect) {
             drawButton(btnPlay, "Jugar");
             drawButton(btnMultiplayer, "Multiplayer");
-            drawButton(btnOptions, "Opciones");
             drawButton(btnExit, "Salir");
         } else {
             drawButton(btnBosque, "Bosque");
@@ -118,29 +132,49 @@ public class MenuScreen implements Screen {
     }
 
     private void drawButton(Rectangle r, String text) {
-        // Hover
         Vector3 mp = getMouseWorld();
         boolean hovered = r.contains(mp.x, mp.y);
 
-        // Fondo del botón
+        // Sombra
         sr.begin(ShapeRenderer.ShapeType.Filled);
-        sr.setColor(hovered ? 0.25f : 0.18f, hovered ? 0.25f : 0.18f, hovered ? 0.28f : 0.22f, 1f);
-        sr.rect(r.x, r.y, r.width, r.height);
+        sr.setColor(0, 0, 0, hovered ? 0.35f : 0.25f);
+        drawRoundedRect(r.x + 4f, r.y - 4f, r.width, r.height, 16f);
         sr.end();
 
-        // Borde
-        sr.begin(ShapeRenderer.ShapeType.Line);
-        sr.setColor(0.9f, 0.9f, 0.95f, 1f);
-        sr.rect(r.x, r.y, r.width, r.height);
+        // Borde (rojo) + relleno (hover cambia)
+        sr.begin(ShapeRenderer.ShapeType.Filled);
+        // borde
+        sr.setColor(btnBorder);
+        drawRoundedRect(r.x, r.y, r.width, r.height, 16f);
+        // relleno interior (encoger para “grosor” de borde)
+        float pad = 3.5f;
+        sr.setColor(hovered ? btnFillHover : btnFill);
+        drawRoundedRect(r.x + pad, r.y + pad, r.width - pad*2f, r.height - pad*2f, 13f);
         sr.end();
 
         // Texto centrado
         batch.begin();
+        font.setColor(textColor);
         layout.setText(font, text);
         float tx = r.x + (r.width - layout.width)/2f;
         float ty = r.y + (r.height + layout.height)/2f;
         font.draw(batch, text, tx, ty, 0, Align.left, false);
         batch.end();
+    }
+
+    // Dibuja un rectángulo con esquinas redondeadas usando ShapeRenderer (Filled)
+    private void drawRoundedRect(float x, float y, float w, float h, float radius) {
+        float r = Math.min(radius, Math.min(w, h) / 2f);
+
+        // centro
+        sr.rect(x + r, y, w - 2*r, h);
+        sr.rect(x, y + r, w, h - 2*r);
+
+        // esquinas (cuartos de círculo)
+        sr.circle(x + r, y + r, r, 16);                 // inferior izquierda
+        sr.circle(x + w - r, y + r, r, 16);             // inferior derecha
+        sr.circle(x + r, y + h - r, r, 16);             // superior izquierda
+        sr.circle(x + w - r, y + h - r, r, 16);         // superior derecha
     }
 
     private Vector3 getMouseWorld() {
@@ -160,9 +194,7 @@ public class MenuScreen implements Screen {
                 return;
             }
             if (btnMultiplayer.contains(x, y)) {
-                return;
-            }
-            if (btnOptions.contains(x, y)) {
+                // aquí podrías abrir otra pantalla de multiplayer
                 return;
             }
             if (btnExit.contains(x, y)) {
@@ -171,11 +203,11 @@ public class MenuScreen implements Screen {
             }
         } else {
             if (btnBosque.contains(x, y)) {
-                game.setScreen(new GameScreen(game,1));
+                game.setScreen(new GameScreen(game, 1));
                 return;
             }
             if (btnTeatro.contains(x, y)) {
-                game.setScreen(new GameScreen(game,2));
+                game.setScreen(new GameScreen(game, 2));
                 return;
             }
             if (btnAtras.contains(x, y)) {
@@ -185,15 +217,11 @@ public class MenuScreen implements Screen {
         }
     }
 
-    @Override public void resize(int width, int height) {
-        viewport.update(width, height, true);
-    }
+    @Override public void resize(int width, int height) { viewport.update(width, height, true); }
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}
-
-    @Override
-    public void dispose() {
+    @Override public void dispose() {
         sr.dispose();
         batch.dispose();
         font.dispose();

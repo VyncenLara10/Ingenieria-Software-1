@@ -45,7 +45,7 @@ public class GameScreen implements Screen {
 
     private final ShapeRenderer debugSR = new ShapeRenderer();
     private final ShapeRenderer uiSR = new ShapeRenderer();
-    private final boolean DEBUG = true;
+    private final boolean DEBUG = false;
 
     private boolean paused = false;
     private Rectangle pauseBtnAndroid = new Rectangle();
@@ -128,11 +128,11 @@ public class GameScreen implements Screen {
             enemyManager.update(dt, player);
             interactiveObject.update(dt);
             if(player.isDead()){
-                game.setScreen(new MenuScreen(game));
+                game.setScreen(new DeathScreen(game));
             }
             if (interactiveObject.allCollected()){
                 System.out.println("ya");
-                game.setScreen(new MenuScreen(game));
+                game.setScreen(new WinScreen(game));
             }
             camController.update(dt);
         } else {
