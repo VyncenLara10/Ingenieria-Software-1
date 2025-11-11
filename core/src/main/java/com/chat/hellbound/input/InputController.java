@@ -10,18 +10,28 @@ public class InputController {
     public static float yAxis = 0f;
 
     private static boolean attackPressedThisFrame = false;
+    private static boolean activeAvility = false; // “E” (habilidad)
 
     private static float joyCX, joyCY, joyR;
     private static float atkCX, atkCY, atkR;
+
+    // --- NUEVO: botón de habilidad (E) en Android ---
+    private static float abiCX, abiCY, abiR;
+
     private static final float MARGIN = 24f;
 
     private static int joyPointer = -1;
     private static int atkPointer = -1;
+    // --- NUEVO ---
+    private static int abiPointer = -1;
 
     private static boolean layoutDirty = true;
 
     public static void update() {
+        // reiniciar flags de “just pressed” cada frame
         attackPressedThisFrame = false;
+        activeAvility = false;
+
         if (Gdx.app.getType() == Application.ApplicationType.Android) {
             updateLayoutIfNeeded();
             pollTouch();
@@ -46,15 +56,23 @@ public class InputController {
         if (Gdx.input.isKeyJustPressed(Input.Keys.Z)) pressed = true;
         if (Gdx.input.isKeyJustPressed(Input.Keys.X)) pressed = true;
         attackPressedThisFrame = pressed;
+
+        // “E” en desktop
+        boolean ap = false;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.E)) ap = true;
+        activeAvility = ap;
     }
 
     private static void pollTouch() {
         float x = 0f, y = 0f;
+
         if (joyPointer != -1 && !Gdx.input.isTouched(joyPointer)) joyPointer = -1;
         if (atkPointer != -1 && !Gdx.input.isTouched(atkPointer)) atkPointer = -1;
+        if (abiPointer != -1 && !Gdx.input.isTouched(abiPointer)) abiPointer = -1;
 
         boolean newAttack = false;
-        int sw = Gdx.graphics.getWidth();
+        boolean newAbility = false;
+
         int sh = Gdx.graphics.getHeight();
 
         int maxP = 20;
@@ -69,6 +87,11 @@ public class InputController {
             if (atkPointer == -1 && isInside(sx, sy, atkCX, atkCY, atkR)) {
                 atkPointer = p;
                 newAttack = true;
+            }
+            // --- NUEVO: botón de habilidad (E) ---
+            if (abiPointer == -1 && isInside(sx, sy, abiCX, abiCY, abiR)) {
+                abiPointer = p;
+                newAbility = true; // “just pressed”
             }
         }
 
@@ -91,9 +114,11 @@ public class InputController {
         yAxis = y;
 
         attackPressedThisFrame = newAttack;
-        if (atkPointer != -1 && !Gdx.input.isTouched(atkPointer)) {
-            atkPointer = -1;
-        }
+        activeAvility = newAbility;
+
+        // limpiar punteros sueltos
+        if (atkPointer != -1 && !Gdx.input.isTouched(atkPointer)) atkPointer = -1;
+        if (abiPointer != -1 && !Gdx.input.isTouched(abiPointer)) abiPointer = -1;
     }
 
     private static boolean isInside(float x, float y, float cx, float cy, float r) {
@@ -106,13 +131,23 @@ public class InputController {
         int sw = Gdx.graphics.getWidth();
         int sh = Gdx.graphics.getHeight();
 
+        // Joystick (abajo-izquierda)
         joyR = Math.min(sw, sh) * 0.12f;
         joyCX = MARGIN + joyR;
         joyCY = MARGIN + joyR;
 
+        // Ataque (abajo-derecha)
         atkR = joyR * 0.9f;
         atkCX = sw - (MARGIN + atkR);
         atkCY = MARGIN + atkR;
+
+        // --- NUEVO: Habilidad (E) — a la derecha, encima del botón de ataque ---
+        abiR  = atkR * 0.85f;
+        abiCX = atkCX;
+        abiCY = atkCY + atkR + MARGIN + abiR;
+        // si no entra en pantalla (dispositivos muy bajos), lo pegamos al borde superior con margen
+        float abiCYMax = sh - (MARGIN + abiR);
+        if (abiCY > abiCYMax) abiCY = abiCYMax;
 
         layoutDirty = false;
     }
@@ -123,12 +158,22 @@ public class InputController {
         return attackPressedThisFrame;
     }
 
+    // “E” / habilidad
+    public static boolean activeAvilityPressed(){
+        return activeAvility;
+    }
+
     public static float getJoyCX() { return joyCX; }
     public static float getJoyCY() { return joyCY; }
     public static float getJoyR()  { return joyR;  }
     public static float getAtkCX() { return atkCX; }
     public static float getAtkCY() { return atkCY; }
     public static float getAtkR()  { return atkR;  }
+
+    // --- NUEVOS getters para dibujar el botón “E” ---
+    public static float getAbiCX() { return abiCX; }
+    public static float getAbiCY() { return abiCY; }
+    public static float getAbiR()  { return abiR;  }
 
     public static boolean isAndroid() {
         return Gdx.app.getType() == Application.ApplicationType.Android;

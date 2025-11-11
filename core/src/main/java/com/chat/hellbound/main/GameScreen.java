@@ -53,6 +53,7 @@ public class GameScreen implements Screen {
 
         this.player = new Player(700, 5800, levelManager);
         EnemyShared.hookPlayer(player);
+        player.SetObject("SprintBurst");
 
         float worldW = levelManager.getWorldWidthPx();
         float worldH = levelManager.getWorldHeightPx();

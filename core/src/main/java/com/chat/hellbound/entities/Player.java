@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.chat.hellbound.objects.SprintBurst;
 import com.chat.hellbound.utilz.CameraController.CameraTarget;
 import static com.chat.hellbound.utilz.Constants.PlayerConstants.*;
 import com.chat.hellbound.input.InputController;
@@ -22,6 +23,7 @@ public class Player extends Entity implements CameraTarget {
     private float vx = 0f, vy = 0f;
     private boolean facingRight = true;
     private float scale = 2.5f;
+    private float BonusSpeed = 1f;
 
     private final LevelManager levelManager;
     private int[][] lvlData;
@@ -34,17 +36,23 @@ public class Player extends Entity implements CameraTarget {
     private float attackCd = 0f;
     private float attackActiveTimer = 0f;
     private boolean attackDealtThisWindow = false;
+    private float cooldown = 0f;
 
     private final Vector2 camFocus = new Vector2();
 
+    private String object = "";
+
     public Player(float startX, float startY, LevelManager levelManager) {
+        this.object = object;
+        this.BonusSpeed = BonusSpeed;
+        this.cooldown = cooldown;
         this.levelManager = levelManager;
         this.lvlData = levelManager.getLevelData();
         this.tileW = levelManager.getTileWidth();
         this.tileH = levelManager.getTileHeight();
         loadAnimations();
-        float hbW = FRAME_W * scale;
-        float hbH = FRAME_H * scale;
+        float hbW = FRAME_W * (scale*0.8f);
+        float hbH = FRAME_H * (scale*0.8f);
         initHitbox(startX, startY, hbW, hbH);
     }
 
@@ -90,8 +98,8 @@ public class Player extends Entity implements CameraTarget {
         float ix = InputController.xAxis;
         float iy = InputController.yAxis;
 
-        vx = ix * MOVE_SPEED;
-        vy = iy * MOVE_SPEED;
+        vx = ix * (MOVE_SPEED*BonusSpeed);
+        vy = iy * (MOVE_SPEED*BonusSpeed);
 
         float nx = hitbox.x + vx * dt;
         if (HelpMethods.CanMoveHere(nx, hitbox.y, hitbox.width, hitbox.height, lvlData, tileW, tileH)) {
@@ -143,6 +151,22 @@ public class Player extends Entity implements CameraTarget {
             if (attackActiveTimer <= 0f) {
                 attackActiveTimer = 0f;
                 attackBox.set(0, 0, 0, 0);
+            }
+        }
+
+        if (InputController.activeAvilityPressed() && cooldown == 0) {
+            useObject();
+        }
+
+        if (cooldown > 0f) {
+            cooldown -= dt;
+
+            if (cooldown <= 8f && object == "SprintBurst") {
+                setBonusSpeed(1f);
+            }
+
+            if (cooldown <= 0f) {
+                cooldown = 0f;
             }
         }
 
@@ -217,4 +241,19 @@ public class Player extends Entity implements CameraTarget {
         return new Rectangle(attackBox);
     }
 
+    public void SetObject(String obj){
+        this.object = obj;
+    }
+
+    public void useObject(){
+        if(this.object.equals("SprintBurst")){
+            SprintBurst spr = new SprintBurst(this.levelManager,this);
+            this.cooldown = 10f;
+            spr.use();
+        }
+    }
+
+    public void setBonusSpeed(float bonus){
+        this.BonusSpeed = bonus;
+    }
 }

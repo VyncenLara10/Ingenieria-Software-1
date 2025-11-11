@@ -12,6 +12,8 @@ public class TileMapping {
     public static final int TRUNK2 = 8;
     public static final int TRUNK3 = 9;
 
+
+
     public static int getTileTypeFromRed(int red) {
         if (red <= 5)  return TREE;
         if (red <= 10) return BUSH1;

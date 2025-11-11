@@ -14,6 +14,9 @@ public class LoadSave {
 
     public static final String PLAYER_ATLAS       = "player_sprites.png";
     public static final String LEVEL_ATLAS        = "spritesleveldefinitive.png";
+    public static final String LEVEL_TWO_ATLAS    = "spritesleveldefinitivelvl2.png";
+    public static final String LOBBY_ATLAS        = "spriteslobby.png";
+    public static final String LOBBY_DATA         = "level_one_data.png";
     public static final String LEVEL_ONE_DATA     = "maptilesections.png";
     public static final String MENU_BUTTONS       = "button_atlas.png";
     public static final String MENU_BACKGROUND    = "menu_background.png";
@@ -103,11 +106,10 @@ public class LoadSave {
             for (int i = 0; i < w; i++) {
                 int rgba = pm.getPixel(i, j);
 
-                // Extraer el canal azul (últimos 8 bits)
                 int b = rgba & 0xFF;
 
                 if (b == 255 || b == 254 || b == 253) {
-                    int drawY = (h - 1 - j); // LibGDX invierte eje Y
+                    int drawY = (h - 1 - j);
 
                     int type = 0;
                     if (b == 255) type = 1;
