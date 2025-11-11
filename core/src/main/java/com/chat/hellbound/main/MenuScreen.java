@@ -156,17 +156,13 @@ public class MenuScreen implements Screen {
 
         if (!showLevelSelect) {
             if (btnPlay.contains(x, y)) {
-                // Ir a selección de nivel
                 showLevelSelect = true;
                 return;
             }
             if (btnMultiplayer.contains(x, y)) {
-                // Aquí puedes cambiar a tu estado/pantalla de multiplayer si ya lo tienes.
-                // Por ahora, sin acción para no romper lógica existente.
                 return;
             }
             if (btnOptions.contains(x, y)) {
-                // Aquí podrías abrir opciones si ya existe tu pantalla de opciones.
                 return;
             }
             if (btnExit.contains(x, y)) {
@@ -174,9 +170,12 @@ public class MenuScreen implements Screen {
                 return;
             }
         } else {
-            // Selección de nivel: Ambos hacen lo mismo que hacía "Jugar" antes (crear GameScreen).
-            if (btnBosque.contains(x, y) || btnTeatro.contains(x, y)) {
-                game.setScreen(new GameScreen(game));
+            if (btnBosque.contains(x, y)) {
+                game.setScreen(new GameScreen(game,1));
+                return;
+            }
+            if (btnTeatro.contains(x, y)) {
+                game.setScreen(new GameScreen(game,2));
                 return;
             }
             if (btnAtras.contains(x, y)) {
