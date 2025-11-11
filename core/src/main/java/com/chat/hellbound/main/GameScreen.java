@@ -19,6 +19,8 @@ import com.chat.hellbound.utilz.Constants;
 import com.chat.hellbound.utilz.CameraController;
 import com.chat.hellbound.ui.TouchControls;
 import com.chat.hellbound.input.InputController;
+import com.chat.hellbound.utilz.LoadSave;
+import com.badlogic.gdx.graphics.Texture;
 
 public class GameScreen implements Screen {
 
@@ -35,11 +37,12 @@ public class GameScreen implements Screen {
 
     private final ShapeRenderer debugSR = new ShapeRenderer();
     private final boolean DEBUG = true;
+    private int level;
 
-    public GameScreen(Main game) {
+    public GameScreen(Main game,int level) {
         this.game = game;
         this.batch = new SpriteBatch();
-
+        this.level = level;
         this.camera = new OrthographicCamera();
         this.viewport = new FitViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT, camera);
         this.viewport.apply();
@@ -47,8 +50,14 @@ public class GameScreen implements Screen {
         camera.position.set(Constants.WORLD_WIDTH / 2f, Constants.WORLD_HEIGHT / 2f, 0f);
 
         Assets.load();
-
-        levelManager = new LevelManager();
+        Texture atl = LoadSave.GetSpriteAtlas(LoadSave.LEVEL_ATLAS);
+        if (level == 1){
+            atl = LoadSave.GetSpriteAtlas(LoadSave.LEVEL_ATLAS);
+        }
+        if (level == 2){
+            atl = LoadSave.GetSpriteAtlas(LoadSave.LEVEL_TWO_ATLAS);
+        }
+        levelManager = new LevelManager(atl);
         enemyManager = new EnemyManager(levelManager);
 
         this.player = new Player(700, 5800, levelManager);
