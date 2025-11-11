@@ -5,112 +5,190 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.chat.hellbound.gamestates.Gamestate;
-import com.chat.hellbound.ui.MenuButton;
-import com.chat.hellbound.input.InputController;
 import com.chat.hellbound.utilz.Constants;
 
 public class MenuScreen implements Screen {
 
     private final Main game;
-    private final OrthographicCamera camera;
-    private final Viewport viewport;
 
-    private final ShapeRenderer sr;
-    private final SpriteBatch batch;
-    private final BitmapFont font;
+    private OrthographicCamera cam;
+    private Viewport viewport;
+    private SpriteBatch batch;
+    private ShapeRenderer sr;
+    private BitmapFont font;
+    private GlyphLayout layout;
+    private final Vector3 touch = new Vector3();
 
-    private MenuButton btnPlay, btnMulti, btnOptions, btnExit;
+    // Estado: ¿estamos mostrando la selección de nivel?
+    private boolean showLevelSelect = false;
+
+    // Botones del menú principal (los "viejos")
+    private Rectangle btnPlay;
+    private Rectangle btnOptions;
+    private Rectangle btnMultiplayer;
+    private Rectangle btnExit;
+
+    // Botones de selección de nivel
+    private Rectangle btnBosque;
+    private Rectangle btnTeatro;
+    private Rectangle btnAtras;
 
     public MenuScreen(Main game) {
         this.game = game;
+    }
 
-        this.camera = new OrthographicCamera();
-        this.viewport = new FitViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT, camera);
-        viewport.apply();
-        camera.position.set(Constants.WORLD_WIDTH / 2f, Constants.WORLD_HEIGHT / 2f, 0f);
+    @Override
+    public void show() {
+        cam = new OrthographicCamera();
+        viewport = new FitViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT, cam);
+        viewport.apply(true);
+        cam.position.set(Constants.WORLD_WIDTH / 2f, Constants.WORLD_HEIGHT / 2f, 0);
+        cam.update();
 
-        sr = new ShapeRenderer();
         batch = new SpriteBatch();
-        font = new BitmapFont();
+        sr = new ShapeRenderer();
+        font = new BitmapFont(); // usa default font (asegúrate de tenerla o cambia por tu fuente)
+        layout = new GlyphLayout();
 
-        float bw = 360f;
+        // Layout de botones del menú principal
+        float bw = 380f;
         float bh = 80f;
         float gap = 22f;
         float startY = Constants.WORLD_HEIGHT * 0.55f;
-        float cx = (Constants.WORLD_WIDTH - bw) * 0.5f;
 
-        btnPlay    = new MenuButton(viewport, cx, startY,                 bw, bh, "Jugar");
-        btnMulti   = new MenuButton(viewport, cx, startY - (bh + gap),    bw, bh, "Multijugador");
-        btnOptions = new MenuButton(viewport, cx, startY - (bh + gap) * 2, bw, bh, "Opciones");
-        btnExit    = new MenuButton(viewport, cx, startY - (bh + gap) * 3, bw, bh, "Salir");
-    }
+        btnPlay        = new Rectangle((Constants.WORLD_WIDTH - bw)/2f, startY, bw,      bh);
+        btnMultiplayer = new Rectangle((Constants.WORLD_WIDTH - bw)/2f, startY - (bh+gap)*1, bw, bh);
+        btnOptions     = new Rectangle((Constants.WORLD_WIDTH - bw)/2f, startY - (bh+gap)*2, bw, bh);
+        btnExit        = new Rectangle((Constants.WORLD_WIDTH - bw)/2f, startY - (bh+gap)*3, bw, bh);
 
-    @Override public void show() {}
+        // Layout de botones de selección de nivel
+        float selWidth = 360f;
+        float selHeight = 90f;
+        float selGap = 26f;
+        float selStartY = Constants.WORLD_HEIGHT * 0.55f;
 
-    private void update(float dt) {
-        InputController.update();
-
-        if (btnPlay.isClicked()) {
-            game.setState(Gamestate.PLAYING);
-        }
-        if (btnExit.isClicked()) {
-            game.setState(Gamestate.EXIT);
-        }
+        btnBosque = new Rectangle((Constants.WORLD_WIDTH - selWidth)/2f, selStartY, selWidth, selHeight);
+        btnTeatro = new Rectangle((Constants.WORLD_WIDTH - selWidth)/2f, selStartY - (selHeight + selGap), selWidth, selHeight);
+        btnAtras  = new Rectangle((Constants.WORLD_WIDTH - 220f)/2f, Constants.WORLD_HEIGHT * 0.20f, 220f, 70f);
     }
 
     @Override
     public void render(float delta) {
-        update(delta);
+        handleInput();
 
-        Gdx.gl.glClearColor(0.10f, 0.10f, 0.12f, 1f);
+        Gdx.gl.glClearColor(0.07f, 0.07f, 0.09f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        camera.update();
-        sr.setProjectionMatrix(camera.combined);
-        batch.setProjectionMatrix(camera.combined);
-
+        // Fondo simple
+        sr.setProjectionMatrix(cam.combined);
         sr.begin(ShapeRenderer.ShapeType.Filled);
-        sr.setColor(0.07f, 0.07f, 0.09f, 1f);
+        sr.setColor(0.10f, 0.10f, 0.14f, 1f);
         sr.rect(0, 0, Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT);
         sr.end();
 
+        batch.setProjectionMatrix(cam.combined);
+        batch.begin();
+
+        // Título
+        String title = showLevelSelect ? "Selecciona un nivel" : "Hellbound";
+        layout.setText(font, title);
+        font.draw(batch, title, (Constants.WORLD_WIDTH - layout.width)/2f, Constants.WORLD_HEIGHT * 0.82f);
+
+        batch.end();
+
+        // Dibujo de botones según estado
+        if (!showLevelSelect) {
+            drawButton(btnPlay, "Jugar");
+            drawButton(btnMultiplayer, "Multiplayer");
+            drawButton(btnOptions, "Opciones");
+            drawButton(btnExit, "Salir");
+        } else {
+            drawButton(btnBosque, "Bosque");
+            drawButton(btnTeatro, "Teatro");
+            drawButton(btnAtras, "Atrás");
+        }
+    }
+
+    private void drawButton(Rectangle r, String text) {
+        // Hover
+        Vector3 mp = getMouseWorld();
+        boolean hovered = r.contains(mp.x, mp.y);
+
+        // Fondo del botón
         sr.begin(ShapeRenderer.ShapeType.Filled);
-        btnPlay.render(sr);
-        btnMulti.render(sr);
-        btnOptions.render(sr);
-        btnExit.render(sr);
+        sr.setColor(hovered ? 0.25f : 0.18f, hovered ? 0.25f : 0.18f, hovered ? 0.28f : 0.22f, 1f);
+        sr.rect(r.x, r.y, r.width, r.height);
         sr.end();
 
+        // Borde
+        sr.begin(ShapeRenderer.ShapeType.Line);
+        sr.setColor(0.9f, 0.9f, 0.95f, 1f);
+        sr.rect(r.x, r.y, r.width, r.height);
+        sr.end();
+
+        // Texto centrado
         batch.begin();
-        font.getData().setScale(1.8f);
-        font.draw(batch, "Hellbound", Constants.WORLD_WIDTH * 0.5f - 96f, Constants.WORLD_HEIGHT - 48f);
-
-        font.getData().setScale(1.2f);
-        drawButtonLabel(batch, btnPlay);
-        drawButtonLabel(batch, btnMulti);
-        drawButtonLabel(batch, btnOptions);
-        drawButtonLabel(batch, btnExit);
-
+        layout.setText(font, text);
+        float tx = r.x + (r.width - layout.width)/2f;
+        float ty = r.y + (r.height + layout.height)/2f;
+        font.draw(batch, text, tx, ty, 0, Align.left, false);
         batch.end();
     }
 
-    private void drawButtonLabel(SpriteBatch batch, MenuButton b) {
-        float x = b.getBounds().x + 24f;
-        float y = b.getBounds().y + 52f;
-        font.draw(batch, b.getText(), x, y);
+    private Vector3 getMouseWorld() {
+        touch.set(Gdx.input.getX(), Gdx.input.getY(), 0f);
+        viewport.unproject(touch);
+        return touch;
     }
 
-    @Override
-    public void resize(int width, int height) {
+    private void handleInput() {
+        if (!Gdx.input.justTouched()) return;
+        Vector3 wp = getMouseWorld();
+        float x = wp.x, y = wp.y;
+
+        if (!showLevelSelect) {
+            if (btnPlay.contains(x, y)) {
+                // Ir a selección de nivel
+                showLevelSelect = true;
+                return;
+            }
+            if (btnMultiplayer.contains(x, y)) {
+                // Aquí puedes cambiar a tu estado/pantalla de multiplayer si ya lo tienes.
+                // Por ahora, sin acción para no romper lógica existente.
+                return;
+            }
+            if (btnOptions.contains(x, y)) {
+                // Aquí podrías abrir opciones si ya existe tu pantalla de opciones.
+                return;
+            }
+            if (btnExit.contains(x, y)) {
+                Gdx.app.exit();
+                return;
+            }
+        } else {
+            // Selección de nivel: Ambos hacen lo mismo que hacía "Jugar" antes (crear GameScreen).
+            if (btnBosque.contains(x, y) || btnTeatro.contains(x, y)) {
+                game.setScreen(new GameScreen(game));
+                return;
+            }
+            if (btnAtras.contains(x, y)) {
+                showLevelSelect = false;
+                return;
+            }
+        }
+    }
+
+    @Override public void resize(int width, int height) {
         viewport.update(width, height, true);
-        InputController.invalidateLayout();
     }
-
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}
