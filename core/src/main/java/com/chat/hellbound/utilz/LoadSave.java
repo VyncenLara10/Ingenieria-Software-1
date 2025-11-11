@@ -14,6 +14,9 @@ public class LoadSave {
 
     public static final String PLAYER_ATLAS       = "player_sprites.png";
     public static final String LEVEL_ATLAS        = "spritesleveldefinitive.png";
+    public static final String LEVEL_TWO_ATLAS    = "spritesleveldefinitivelvl2.png";
+    public static final String LOBBY_ATLAS        = "spriteslobby.png";
+    public static final String LOBBY_DATA         = "level_one_data.png";
     public static final String LEVEL_ONE_DATA     = "maptilesections.png";
     public static  final String WIN_OBJ1_MAP1     = "dados.png";
     public static  final String WIN_OBJ2_MAP1     = "retro.png";

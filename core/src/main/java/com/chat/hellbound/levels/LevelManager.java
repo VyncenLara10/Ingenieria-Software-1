@@ -13,8 +13,8 @@ public class LevelManager {
     private Level currentLevel;
 
     public LevelManager() {
-
         atlas = LoadSave.GetSpriteAtlas(LoadSave.LEVEL_ATLAS);
+
         atlas.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
 
         int cols = 10;
