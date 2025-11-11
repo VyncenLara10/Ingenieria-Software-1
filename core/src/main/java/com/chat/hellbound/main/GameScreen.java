@@ -21,6 +21,7 @@ import com.chat.hellbound.entities.Player;
 import com.chat.hellbound.entities.EnemyManager;
 import com.chat.hellbound.entities.EnemyShared;
 import com.chat.hellbound.levels.LevelManager;
+import com.chat.hellbound.objects.InteractiveObject;
 import com.chat.hellbound.utilz.Assets;
 import com.chat.hellbound.utilz.Constants;
 import com.chat.hellbound.utilz.CameraController;
@@ -37,6 +38,7 @@ public class GameScreen implements Screen {
 
     private LevelManager levelManager;
     private EnemyManager enemyManager;
+    private InteractiveObject interactiveObject;
     private CameraController camController;
     private TouchControls touchControls;
     private Player player;
@@ -82,6 +84,7 @@ public class GameScreen implements Screen {
 
         levelManager = new LevelManager(atlas);
         enemyManager = new EnemyManager(levelManager);
+        interactiveObject = new InteractiveObject(levelManager, level);
 
 
         this.player = new Player(700, 5800, levelManager);
@@ -123,6 +126,14 @@ public class GameScreen implements Screen {
             InputController.update();
             player.update(dt);
             enemyManager.update(dt, player);
+            interactiveObject.update(dt);
+            if(player.isDead()){
+                game.setScreen(new MenuScreen(game));
+            }
+            if (interactiveObject.allCollected()){
+                System.out.println("ya");
+                game.setScreen(new MenuScreen(game));
+            }
             camController.update(dt);
         } else {
             handlePauseOverlayInput();
@@ -155,6 +166,7 @@ public class GameScreen implements Screen {
         batch.begin();
         levelManager.draw(batch, 0f);
         enemyManager.render(batch);
+        interactiveObject.render(batch);
         player.render(batch);
         batch.end();
 
@@ -301,7 +313,7 @@ public class GameScreen implements Screen {
         float sz = Math.max(40, Math.min(sw, sh) * 0.07f);
         pauseBtnAndroid.set(12, sh - sz - 12, sz, sz);
     }
-    
+
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height, true);
