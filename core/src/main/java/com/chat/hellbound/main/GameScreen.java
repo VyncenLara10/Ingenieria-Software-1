@@ -22,12 +22,9 @@ import com.chat.hellbound.entities.EnemyManager;
 import com.chat.hellbound.entities.EnemyShared;
 import com.chat.hellbound.levels.LevelManager;
 import com.chat.hellbound.objects.InteractiveObject;
-import com.chat.hellbound.utilz.Assets;
-import com.chat.hellbound.utilz.Constants;
-import com.chat.hellbound.utilz.CameraController;
+import com.chat.hellbound.utilz.*;
 import com.chat.hellbound.ui.TouchControls;
 import com.chat.hellbound.input.InputController;
-import com.chat.hellbound.utilz.LoadSave;
 
 public class GameScreen implements Screen {
 
@@ -55,9 +52,7 @@ public class GameScreen implements Screen {
     private final BitmapFont font = new BitmapFont();
     private final GlyphLayout layout = new GlyphLayout();
 
-    private Texture darknessMask;
-    private float darknessAlpha = 1.0f;
-    private int maskDiameterPx;
+    private DarknessHandler darknessHandler;
 
     private int level;
 
@@ -102,7 +97,8 @@ public class GameScreen implements Screen {
         camController.setPrimaryTarget(player);
 
         computeUiRects(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        rebuildDarknessMask(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        darknessHandler = new DarknessHandler(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), 2.0f);
+
     }
 
 
@@ -131,7 +127,6 @@ public class GameScreen implements Screen {
                 game.setScreen(new DeathScreen(game));
             }
             if (interactiveObject.allCollected()){
-                System.out.println("ya");
                 game.setScreen(new WinScreen(game));
             }
             camController.update(dt);
@@ -178,30 +173,13 @@ public class GameScreen implements Screen {
             debugSR.end();
         }
 
-        renderDarkness();
+        darknessHandler.render(batch, getPlayerCenterX(), getPlayerCenterY(), camera.position.x, camera.position.y, viewport.getWorldWidth(), viewport.getWorldHeight());
 
         renderUiAndPauseOverlay();
 
         touchControls.render();
     }
 
-    private void renderDarkness() {
-        if (darknessMask == null) return;
-
-        float px = getPlayerCenterX();
-        float py = getPlayerCenterY();
-
-        float sx = px - camera.position.x + viewport.getWorldWidth() * 0.5f;
-        float sy = py - camera.position.y + viewport.getWorldHeight() * 0.5f;
-
-        batch.setProjectionMatrix(camera.combined.cpy().setToOrtho2D(
-            0, 0, viewport.getWorldWidth(), viewport.getWorldHeight()));
-        batch.begin();
-        float drawX = sx - maskDiameterPx / 2f;
-        float drawY = sy - maskDiameterPx / 2f;
-        batch.draw(darknessMask, drawX, drawY, maskDiameterPx, maskDiameterPx);
-        batch.end();
-    }
 
     private float getPlayerCenterX() {
         com.badlogic.gdx.math.Rectangle hb = player.getHitbox();
@@ -212,44 +190,6 @@ public class GameScreen implements Screen {
         com.badlogic.gdx.math.Rectangle hb = player.getHitbox();
         return hb.y + hb.height * 0.5f;
     }
-
-    private void rebuildDarknessMask(int screenW, int screenH) {
-        maskDiameterPx = Math.max(screenW, screenH) * 2;
-        if (darknessMask != null) darknessMask.dispose();
-        darknessMask = buildRadialDarkTexture(maskDiameterPx, darknessAlpha);
-    }
-
-    /**
-     * Genera una textura con centro transparente y bordes negros.
-     * El alpha sube desde 0 (centro) a darknessAlpha (borde).
-     */
-    private Texture buildRadialDarkTexture(int size, float alpha) {
-        Pixmap pm = new Pixmap(size, size, Pixmap.Format.RGBA8888);
-        pm.setBlending(Pixmap.Blending.None);
-
-        float cx = size / 2f;
-        float cy = size / 2f;
-        float maxR = size / 2f;
-
-        int aMax = (int) (alpha * 255f);
-        for (int y = 0; y < size; y++) {
-            for (int x = 0; x < size; x++) {
-                float dx = x - cx;
-                float dy = y - cy;
-                float d = (float) Math.sqrt(dx * dx + dy * dy);
-                float t = Math.min(1f, d / maxR); // 0 en centro, 1 en borde
-                // curva suave (cuadrática) para transición
-                float a = t * t;
-                int ia = (int) (a * aMax);
-                pm.setColor(0f, 0f, 0f, ia / 255f);
-                pm.drawPixel(x, y);
-            }
-        }
-        Texture tex = new Texture(pm);
-        pm.dispose();
-        return tex;
-    }
-
 
     private void renderUiAndPauseOverlay() {
         if (InputController.isAndroid()) {
@@ -319,7 +259,8 @@ public class GameScreen implements Screen {
         viewport.update(width, height, true);
         InputController.invalidateLayout();
         computeUiRects(width, height);
-        rebuildDarknessMask(width, height);
+        darknessHandler.rebuild(width, height);
+
     }
 
     @Override public void pause() {}
@@ -335,7 +276,8 @@ public class GameScreen implements Screen {
         touchControls.dispose();
         debugSR.dispose();
         uiSR.dispose();
-        if (darknessMask != null) darknessMask.dispose();
+        darknessHandler.dispose();
+        //if (darknessMask != null) darknessMask.dispose();
         font.dispose();
     }
 }
