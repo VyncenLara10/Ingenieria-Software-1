@@ -36,6 +36,7 @@ public class LoadSave {
     public static final String SMALL_CLOUDS       = "small_clouds.png";
     public static final String CRABBY_SPRITE      = "crabby_sprite.png";
     public static final String STATUS_BAR         = "health_power_bar.png";
+    public static final String TREE_BOSS_SPRITE = "tree_boss_spritesheet.png";
 
     public static Texture GetSpriteAtlas(String fileName) {
         return new Texture(Gdx.files.internal(fileName));

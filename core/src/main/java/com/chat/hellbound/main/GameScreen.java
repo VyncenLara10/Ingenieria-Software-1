@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -20,6 +21,10 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.chat.hellbound.entities.Player;
 import com.chat.hellbound.entities.EnemyManager;
 import com.chat.hellbound.entities.EnemyShared;
+import com.chat.hellbound.entities.BossManager;
+import com.chat.hellbound.entities.HellGuardian;
+import com.chat.hellbound.entities.ShadowLurker;
+import com.chat.hellbound.entities.TreeBoss;
 import com.chat.hellbound.levels.LevelManager;
 import com.chat.hellbound.objects.InteractiveObject;
 import com.chat.hellbound.utilz.*;
@@ -35,6 +40,7 @@ public class GameScreen implements Screen {
 
     private LevelManager levelManager;
     private EnemyManager enemyManager;
+    private BossManager bossManager;
     private InteractiveObject interactiveObject;
     private CameraController camController;
     private TouchControls touchControls;
@@ -79,12 +85,17 @@ public class GameScreen implements Screen {
 
         levelManager = new LevelManager(atlas, level);
         enemyManager = new EnemyManager(levelManager, level);
+        bossManager = new BossManager();
         interactiveObject = new InteractiveObject(levelManager, level);
 
 
         this.player = new Player(700, 5800, levelManager, level);
         EnemyShared.hookPlayer(player);
         player.SetObject("SprintBurst");
+        
+        // Initialize TreeBoss for all levels
+        // El TreeBoss aparecerá cerca del jugador cuando se recolecten los 3 objetos
+        // Por ahora no lo añadimos al BossManager, se agregará dinámicamente
 
         float worldW = levelManager.getWorldWidthPx();
         float worldH = levelManager.getWorldHeightPx();
@@ -122,11 +133,32 @@ public class GameScreen implements Screen {
             InputController.update();
             player.update(dt);
             enemyManager.update(dt, player);
+            bossManager.update(dt, player);
             interactiveObject.update(dt);
+            
+            // Trigger TreeBoss cuando se tengan los 3 objetos
+            if (!bossManager.isBossEncounterActive() && interactiveObject.allCollected()) {
+                // Spawnear el TreeBoss cerca del jugador cuando se recolecten los 3 objetos
+                float playerX = player.getHitbox().x;
+                float playerY = player.getHitbox().y;
+                
+                // Spawnear el boss un poco adelante del jugador (200 pixels)
+                float bossX = playerX + 200f;
+                float bossY = playerY;
+                
+                TreeBoss treeBoss = new TreeBoss(bossX, bossY, levelManager);
+                bossManager.addBoss(treeBoss);
+                bossManager.triggerBossEncounter(0);
+                
+                System.out.println("¡Tree Boss ha aparecido!");
+            }
+            
             if(player.isDead()){
                 game.setScreen(new DeathScreen(game));
             }
-            if (interactiveObject.allCollected()){
+            // Win condition: all objects collected AND boss defeated (if exists)
+            boolean bossDefeated = bossManager.getActiveBoss() == null || bossManager.getActiveBoss().isDefeated();
+            if (interactiveObject.allCollected() && bossDefeated){
                 game.setScreen(new WinScreen(game));
             }
             camController.update(dt);
@@ -161,6 +193,7 @@ public class GameScreen implements Screen {
         batch.begin();
         levelManager.draw(batch, 0f);
         enemyManager.render(batch);
+        bossManager.render(batch);
         interactiveObject.render(batch);
         player.render(batch);
         batch.end();
@@ -192,6 +225,34 @@ public class GameScreen implements Screen {
     }
 
     private void renderUiAndPauseOverlay() {
+        int sw = Gdx.graphics.getWidth();
+        int sh = Gdx.graphics.getHeight();
+        
+        // UI siempre visible - Contador de objetos
+        batch.setProjectionMatrix(viewport.getCamera().combined.cpy().setToOrtho2D(0, 0, sw, sh));
+        batch.begin();
+        
+        // Contador de objetos en la esquina superior izquierda
+        String objectText = "Objetos: " + interactiveObject.getCollectedCount() + "/" + interactiveObject.getTotalObjects();
+        layout.setText(font, objectText);
+        float objX = 20f;
+        float objY = sh - 20f;
+        font.setColor(Color.WHITE);
+        font.draw(batch, layout, objX, objY);
+        
+        // Indicador si el boss está activo
+        if (bossManager.isBossEncounterActive() && bossManager.getActiveBoss() != null) {
+            String bossText = "¡BOSS!";
+            layout.setText(font, bossText);
+            float bossX = (sw - layout.width) / 2f;
+            float bossY = sh - 20f;
+            font.setColor(Color.RED);
+            font.draw(batch, layout, bossX, bossY);
+        }
+        
+        batch.end();
+        
+        // Botón de pausa en Android
         if (InputController.isAndroid()) {
             uiSR.setProjectionMatrix(viewport.getCamera().combined.cpy().setToOrtho2D(
                 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight()));
