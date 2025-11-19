@@ -23,7 +23,6 @@ import com.chat.hellbound.entities.EnemyManager;
 import com.chat.hellbound.entities.EnemyShared;
 import com.chat.hellbound.entities.BossManager;
 import com.chat.hellbound.entities.HellGuardian;
-import com.chat.hellbound.entities.ShadowLurker;
 import com.chat.hellbound.entities.TreeBoss;
 import com.chat.hellbound.levels.LevelManager;
 import com.chat.hellbound.objects.InteractiveObject;
@@ -92,7 +91,7 @@ public class GameScreen implements Screen {
         this.player = new Player(700, 5800, levelManager, level);
         EnemyShared.hookPlayer(player);
         player.SetObject("SprintBurst");
-        
+
         // Initialize TreeBoss for all levels
         // El TreeBoss aparecerá cerca del jugador cuando se recolecten los 3 objetos
         // Por ahora no lo añadimos al BossManager, se agregará dinámicamente
@@ -135,24 +134,24 @@ public class GameScreen implements Screen {
             enemyManager.update(dt, player);
             bossManager.update(dt, player);
             interactiveObject.update(dt);
-            
+
             // Trigger TreeBoss cuando se tengan los 3 objetos
             if (!bossManager.isBossEncounterActive() && interactiveObject.allCollected()) {
                 // Spawnear el TreeBoss cerca del jugador cuando se recolecten los 3 objetos
                 float playerX = player.getHitbox().x;
                 float playerY = player.getHitbox().y;
-                
+
                 // Spawnear el boss un poco adelante del jugador (200 pixels)
                 float bossX = playerX + 200f;
                 float bossY = playerY;
-                
+
                 TreeBoss treeBoss = new TreeBoss(bossX, bossY, levelManager);
                 bossManager.addBoss(treeBoss);
                 bossManager.triggerBossEncounter(0);
-                
+
                 System.out.println("¡Tree Boss ha aparecido!");
             }
-            
+
             if(player.isDead()){
                 game.setScreen(new DeathScreen(game));
             }
@@ -227,11 +226,11 @@ public class GameScreen implements Screen {
     private void renderUiAndPauseOverlay() {
         int sw = Gdx.graphics.getWidth();
         int sh = Gdx.graphics.getHeight();
-        
+
         // UI siempre visible - Contador de objetos
         batch.setProjectionMatrix(viewport.getCamera().combined.cpy().setToOrtho2D(0, 0, sw, sh));
         batch.begin();
-        
+
         // Contador de objetos en la esquina superior izquierda
         String objectText = "Objetos: " + interactiveObject.getCollectedCount() + "/" + interactiveObject.getTotalObjects();
         layout.setText(font, objectText);
@@ -239,7 +238,7 @@ public class GameScreen implements Screen {
         float objY = sh - 20f;
         font.setColor(Color.WHITE);
         font.draw(batch, layout, objX, objY);
-        
+
         // Indicador si el boss está activo
         if (bossManager.isBossEncounterActive() && bossManager.getActiveBoss() != null) {
             String bossText = "¡BOSS!";
@@ -249,9 +248,9 @@ public class GameScreen implements Screen {
             font.setColor(Color.RED);
             font.draw(batch, layout, bossX, bossY);
         }
-        
+
         batch.end();
-        
+
         // Botón de pausa en Android
         if (InputController.isAndroid()) {
             uiSR.setProjectionMatrix(viewport.getCamera().combined.cpy().setToOrtho2D(
@@ -272,18 +271,18 @@ public class GameScreen implements Screen {
         }
 
         if (paused) {
-            int sw = Gdx.graphics.getWidth();
-            int sh = Gdx.graphics.getHeight();
+            int sw1 = Gdx.graphics.getWidth();
+            int sh1 = Gdx.graphics.getHeight();
 
             uiSR.setProjectionMatrix(viewport.getCamera().combined.cpy().setToOrtho2D(0, 0, sw, sh));
             uiSR.begin(ShapeType.Filled);
             uiSR.setColor(0f, 0f, 0f, 0.55f);
-            uiSR.rect(0, 0, sw, sh);
+            uiSR.rect(0, 0, sw1, sh1);
 
-            float panelW = Math.min(420, (int) (sw * 0.8f));
+            float panelW = Math.min(420, (int) (sw1 * 0.8f));
             float panelH = 220;
-            float px = (sw - panelW) / 2f;
-            float py = (sh - panelH) / 2f;
+            float px = (sw1 - panelW) / 2f;
+            float py = (sh1 - panelH) / 2f;
             uiSR.setColor(0.1f, 0.1f, 0.12f, 0.92f);
             uiSR.rect(px, py, panelW, panelH);
 
@@ -310,9 +309,9 @@ public class GameScreen implements Screen {
         }
     }
 
-    private void computeUiRects(int sw, int sh) {
-        float sz = Math.max(40, Math.min(sw, sh) * 0.07f);
-        pauseBtnAndroid.set(12, sh - sz - 12, sz, sz);
+    private void computeUiRects(int sw1, int sh1) {
+        float sz = Math.max(40, Math.min(sw1, sh1) * 0.07f);
+        pauseBtnAndroid.set(12, sh1 - sz - 12, sz, sz);
     }
 
     @Override

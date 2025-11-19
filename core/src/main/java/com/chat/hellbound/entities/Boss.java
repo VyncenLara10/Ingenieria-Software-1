@@ -9,22 +9,37 @@ public abstract class Boss extends Entity {
     protected boolean isDefeated;
     protected boolean isActive;
 
-    // Si queres quitamos las fases
+    // Boss phases
     protected int currentPhase;
     protected float phaseThreshold;
 
+    // Attack patterns
     protected float attackCooldown;
     protected float attackTimer;
     protected int attackPattern;
 
+    // Movement
     protected float moveSpeed;
     protected boolean isEnraged;
-    // Esto si me da tiempo de arreglar el sprite
+
+    // Visual effects
     protected float flashTimer;
     protected boolean isFlashing;
 
+    // Propiedades adicionales para compatibilidad
+    protected float x, y;
+    protected int width, height;
+
     public Boss(float x, float y, int width, int height, int maxHealth) {
-        super(x, y, width, height);
+        // Inicializar el hitbox usando el método de Entity
+        initHitbox(x, y, width, height);
+
+        // Guardar las coordenadas y dimensiones para uso interno
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+
         this.maxHealth = maxHealth;
         this.currentHealth = maxHealth;
         this.isDefeated = false;
@@ -56,7 +71,8 @@ public abstract class Boss extends Entity {
     }
 
     protected void onPhaseChange() {
-        attackCooldown *= 0.8f;
+        // Override in subclasses for phase-specific behavior
+        attackCooldown *= 0.8f; // Attacks become faster
     }
 
     public void takeDamage(int damage) {
@@ -76,6 +92,7 @@ public abstract class Boss extends Entity {
     }
 
     protected void onDefeat() {
+        // Override in subclasses
     }
 
     protected void updateFlash(float delta) {
@@ -87,6 +104,21 @@ public abstract class Boss extends Entity {
         }
     }
 
+    // Métodos para actualizar posición y sincronizar con hitbox
+    protected void updatePosition(float newX, float newY) {
+        this.x = newX;
+        this.y = newY;
+        if (hitbox != null) {
+            hitbox.x = newX;
+            hitbox.y = newY;
+        }
+    }
+
+    protected void setPosition(float newX, float newY) {
+        updatePosition(newX, newY);
+    }
+
+    // Getters
     public int getCurrentHealth() { return currentHealth; }
     public int getMaxHealth() { return maxHealth; }
     public boolean isDefeated() { return isDefeated; }
@@ -94,9 +126,17 @@ public abstract class Boss extends Entity {
     public int getCurrentPhase() { return currentPhase; }
     public boolean isFlashing() { return isFlashing; }
 
+    // Getters para posición y tamaño
+    public float getX() { return x; }
+    public float getY() { return y; }
+    public int getWidth() { return width; }
+    public int getHeight() { return height; }
+
+    // Setters
     public void setActive(boolean active) { this.isActive = active; }
 
+    @Override
     public Rectangle getHitbox() {
-        return new Rectangle(x, y, width, height);
+        return hitbox;
     }
 }

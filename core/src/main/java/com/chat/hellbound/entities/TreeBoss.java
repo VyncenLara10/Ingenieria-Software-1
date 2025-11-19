@@ -7,33 +7,31 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.chat.hellbound.levels.LevelManager;
 import com.chat.hellbound.utilz.Assets;
-import com.chat.hellbound.utilz.HelpMethods;
 import com.chat.hellbound.utilz.TextureUtils;
 
 import static com.chat.hellbound.utilz.Constants.TreeBossConstants.*;
 
+/**
+ * TreeBoss - Version ULTRA SIMPLE sin HelpMethods complicados
+ */
 public class TreeBoss extends Boss {
 
     private final LevelManager levelManager;
-    private final int[][] lvlData;
-    private final int tileW, tileH;
 
     private TextureRegion[][] frames;
 
-    private float attackCooldown = ATTACK_COOLDOWN;
+    private float attackCooldownTimer = ATTACK_COOLDOWN;
     private float attackLock = 0f;
     private float hitLock = 0f;
 
-    // Escala del jefe
     private float scale = BOSS_SCALE;
 
-    // Hitbox para el ataque
     private final Rectangle attackBox = new Rectangle();
 
-    // Estado de movimiento
+    // Estados
     private int action = IDLE;
     private int aniIndex = 0;
-    private int aniTick = 0;
+    private float aniTick = 0;
     private boolean facingRight = true;
     private boolean dead = false;
 
@@ -42,11 +40,8 @@ public class TreeBoss extends Boss {
 
     public TreeBoss(float x, float y, LevelManager lm) {
         super(x, y, (int)(FRAME_W * BOSS_SCALE), (int)(FRAME_H * BOSS_SCALE), MAX_HP);
-        
+
         this.levelManager = lm;
-        this.lvlData = lm.getLevelData();
-        this.tileW = lm.getTileWidth();
-        this.tileH = lm.getTileHeight();
 
         Texture atlas = Assets.getTreeBossAtlas();
         TextureUtils.prepareTexture(atlas);
@@ -55,25 +50,20 @@ public class TreeBoss extends Boss {
 
         this.maxHealth = MAX_HP;
         this.currentHealth = maxHealth;
-        this.moveSpeed = MOVE_SPEED;
-        
-        this.x = x;
-        this.y = y;
-        this.width = (int)(FRAME_W * scale);
-        this.height = (int)(FRAME_H * scale);
     }
 
     @Override
     public void update(float delta, Player player) {
         if (!isActive) return;
-        
+
         if (dead || isDefeated) {
             action = DEAD;
             updateDeath(delta);
             return;
         }
 
-        attackCooldown = Math.max(0f, attackCooldown - delta);
+        // Actualizar timers
+        attackCooldownTimer = Math.max(0f, attackCooldownTimer - delta);
         attackLock = Math.max(0f, attackLock - delta);
         hitLock = Math.max(0f, hitLock - delta);
         updateFlash(delta);
@@ -84,34 +74,35 @@ public class TreeBoss extends Boss {
             return;
         }
 
+        // Calcular dirección al jugador
         Vector2 playerPos = EnemyShared.playerCenter();
-        float cx = x + width * 0.5f;
-        float cy = y + height * 0.5f;
+        float cx = hitbox.x + hitbox.width * 0.5f;
+        float cy = hitbox.y + hitbox.height * 0.5f;
         float dx = playerPos.x - cx;
         float dy = playerPos.y - cy;
         float dist2 = dx*dx + dy*dy;
 
         float desiredVx = 0f, desiredVy = 0f;
 
+        // Comportamiento de persecución
         if (dist2 < AGGRO_RANGE * AGGRO_RANGE) {
             if (Math.abs(dx) > FACE_EPS) facingRight = dx > 0;
-            
             float len = (float)Math.sqrt(dist2);
             if (len > 1e-5f) {
                 float nx = dx / len;
                 float ny = dy / len;
-                
+
+                // Velocidad aumentada por fase
                 float speedMultiplier = 1.0f;
                 if (currentPhase == 2) speedMultiplier = 1.3f;
                 if (currentPhase == 3) speedMultiplier = 1.6f;
-                
+
                 desiredVx = nx * MOVE_SPEED * speedMultiplier;
                 desiredVy = ny * MOVE_SPEED * speedMultiplier;
             }
-            
-            if (len < ATTACK_RANGE && attackCooldown == 0f && attackLock == 0f) {
+            if (len < ATTACK_RANGE && attackCooldownTimer == 0f && attackLock == 0f) {
                 doAttack();
-                attackCooldown = ATTACK_COOLDOWN * (currentPhase == 3 ? 0.7f : 1.0f);
+                attackCooldownTimer = ATTACK_COOLDOWN * (currentPhase == 3 ? 0.7f : 1.0f);
                 attackLock = ATTACK_LOCK_TIME;
             }
         }
@@ -124,21 +115,9 @@ public class TreeBoss extends Boss {
             action = (Math.abs(desiredVx) > 0.01f || Math.abs(desiredVy) > 0.01f) ? RUN : IDLE;
         }
 
-        // Mover horizontalmente
-        float newX = x + desiredVx * delta;
-        if (HelpMethods.CanMoveHere(newX, y, width, height, lvlData, tileW, tileH)) {
-            x = newX;
-        } else {
-            x = HelpMethods.GetEntityXPosNextToWall(getHitbox(), desiredVx * delta, lvlData, tileW, tileH);
-        }
-
-        // Mover verticalmente
-        float newY = y + desiredVy * delta;
-        if (HelpMethods.CanMoveHere(x, newY, width, height, lvlData, tileW, tileH)) {
-            y = newY;
-        } else {
-            y = HelpMethods.GetEntityYPosUnderRoofOrAboveFloor(getHitbox(), desiredVy * delta, lvlData, tileW, tileH);
-        }
+        // MOVIMIENTO SIMPLE - sin colisiones complicadas
+        hitbox.x += desiredVx * delta;
+        hitbox.y += desiredVy * delta;
 
         updateAnimation(delta, getActionFrameCount());
     }
@@ -147,12 +126,10 @@ public class TreeBoss extends Boss {
         action = ATTACK;
         aniIndex = 0;
         aniTick = 0;
-
-        float w = (width) * 0.7f;
-        float h = (height) * 0.6f;
-        float ax = facingRight ? (x + width) : (x - w);
-        float ay = y + height * 0.2f;
-        
+        float w = (FRAME_W * scale) * 0.7f;
+        float h = (FRAME_H * scale) * 0.6f;
+        float ax = facingRight ? (hitbox.x + hitbox.width) : (hitbox.x - w);
+        float ay = hitbox.y + hitbox.height * 0.25f;
         attackBox.set(ax, ay, w, h);
         EnemyShared.queueEnemyAttack(this, attackBox, DAMAGE);
     }
@@ -160,7 +137,7 @@ public class TreeBoss extends Boss {
     @Override
     public void render(SpriteBatch batch) {
         if (!isActive) return;
-        
+
         TextureRegion f = currentFrame();
         float w = FRAME_W * scale;
         float h = FRAME_H * scale;
@@ -170,9 +147,9 @@ public class TreeBoss extends Boss {
         if (isFlashing) {
             batch.setColor(1f, 0.3f, 0.3f, 1f);
         }
-        
-        batch.draw(f, x, y, w * 0.5f, 0f, w, h, scaleX, 1f, 0f);
-        
+
+        batch.draw(f, hitbox.x, hitbox.y, w * 0.5f, 0f, w, h, scaleX, 1f, 0f);
+
         if (isFlashing) {
             batch.setColor(1f, 1f, 1f, 1f);
         }
@@ -188,7 +165,6 @@ public class TreeBoss extends Boss {
             case IDLE:
             default:     row = IDLE_ROW;   count = IDLE_COUNT;   break;
         }
-        
         row = Math.max(0, Math.min(row, frames.length - 1));
         int cols = frames[row].length;
         int col = aniIndex % Math.max(1, Math.min(count, cols));
@@ -230,19 +206,20 @@ public class TreeBoss extends Boss {
     @Override
     public void takeDamage(int damage) {
         if (isDefeated || dead) return;
-        
+
         currentHealth -= damage;
         isFlashing = true;
         flashTimer = 0.2f;
 
+        // Knockback
         float dir = facingRight ? -1f : 1f;
-        x += dir * KNOCKBACK * 0.1f;
-        
+        hitbox.x += dir * KNOCKBACK * 0.1f;
+
         action = HIT;
         aniIndex = 0;
         aniTick = 0;
         hitLock = HIT_LOCK_TIME;
-        
+
         if (currentHealth <= 0) {
             currentHealth = 0;
             isDefeated = true;
@@ -264,15 +241,12 @@ public class TreeBoss extends Boss {
 
     @Override
     public void selectAttackPattern() {
+        // Simple
     }
 
     @Override
     public void executeAttack(Player player) {
-    }
-
-    @Override
-    public Rectangle getHitbox() {
-        return new Rectangle(x, y, width, height);
+        // Se ejecuta en doAttack()
     }
 
     public boolean isDead() {
