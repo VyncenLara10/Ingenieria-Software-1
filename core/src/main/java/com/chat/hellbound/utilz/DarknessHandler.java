@@ -78,9 +78,9 @@ public class DarknessHandler {
         final float maxR = size / 2f;
 
         // ===== PARÁMETROS IMPORTANTES - AJUSTA SI QUIERES =====
-        final float innerRadiusRatio = 0.02f; // 2% del radio total -> área clara muy pequeña
-        final float outerRadiusRatio = 0.07f; // 6% del radio total -> en este radio el overlay ya es negro total
-        final float falloffPow = 1.8f;        // potencia de la transición: <2 para suavizar, >2 para concentrar
+        final float innerRadiusRatio = 0.25f;  // ← Centro completamente iluminado
+        final float outerRadiusRatio = 0.35f;  // ← Donde empieza la oscuridad total
+        final float falloffPow = 1.8f;         // ← Suavidad del degradado   // potencia de la transición: <2 para suavizar, >2 para concentrar
         // =====================================================
 
         final float innerR = maxR * innerRadiusRatio;

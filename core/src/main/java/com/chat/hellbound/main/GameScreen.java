@@ -107,7 +107,7 @@ public class GameScreen implements Screen {
         camController.setPrimaryTarget(player);
 
         computeUiRects(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        darknessHandler = new DarknessHandler(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), 2.0f);
+        darknessHandler = new DarknessHandler(Gdx.graphics.getWidth() + 500, Gdx.graphics.getHeight() + 500, 2.0f);
 
     }
 
