@@ -26,29 +26,28 @@ public class TouchControls {
         float ay = InputController.getAtkCY();
         float ar = InputController.getAtkR();
 
-        // --- NUEVO: botón de habilidad (E) ---
         float ex = InputController.getAbiCX();
         float ey = InputController.getAbiCY();
         float er = InputController.getAbiR();
+        
+        float outerA = 0.16f;
+        float innerA = 0.30f;
 
         sr.begin(ShapeRenderer.ShapeType.Filled);
 
-        // Joystick
-        sr.setColor(1f, 1f, 1f, 0.12f);
+        sr.setColor(1f, 1f, 1f, outerA);
         sr.circle(jx, jy, jr);
-        sr.setColor(1f, 1f, 1f, 0.25f);
+        sr.setColor(1f, 1f, 1f, innerA);
         sr.circle(jx, jy, jr * 0.45f);
 
-        // Ataque
-        sr.setColor(1f, 0.2f, 0.2f, 0.18f);
+        sr.setColor(1f, 1f, 1f, outerA);
         sr.circle(ax, ay, ar);
-        sr.setColor(1f, 0.2f, 0.2f, 0.32f);
+        sr.setColor(1f, 1f, 1f, innerA);
         sr.circle(ax, ay, ar * 0.55f);
 
-        // Habilidad (E) – tono cian para diferenciar pero mantener estilo
-        sr.setColor(0.2f, 0.8f, 1f, 0.18f);
+        sr.setColor(1f, 1f, 1f, outerA);
         sr.circle(ex, ey, er);
-        sr.setColor(0.2f, 0.8f, 1f, 0.32f);
+        sr.setColor(1f, 1f, 1f, innerA);
         sr.circle(ex, ey, er * 0.55f);
 
         sr.end();

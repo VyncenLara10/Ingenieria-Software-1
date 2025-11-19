@@ -77,12 +77,12 @@ public class GameScreen implements Screen {
             atlas = LoadSave.GetSpriteAtlas(LoadSave.LEVEL_TWO_ATLAS);
         }
 
-        levelManager = new LevelManager(atlas);
-        enemyManager = new EnemyManager(levelManager);
+        levelManager = new LevelManager(atlas, level);
+        enemyManager = new EnemyManager(levelManager, level);
         interactiveObject = new InteractiveObject(levelManager, level);
 
 
-        this.player = new Player(700, 5800, levelManager);
+        this.player = new Player(700, 5800, levelManager, level);
         EnemyShared.hookPlayer(player);
         player.SetObject("SprintBurst");
 
