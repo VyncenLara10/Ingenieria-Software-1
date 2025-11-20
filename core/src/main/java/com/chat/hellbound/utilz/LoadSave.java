@@ -12,7 +12,7 @@ import static com.chat.hellbound.utilz.Constants.EnemyConstants;
 
 public class LoadSave {
 
-    public static final String PLAYER_ATLAS       = "player_sprites.png";
+    public static final String PLAYER_ATLAS       = "FANTASMITA_AZUL.png";
     public static final String LEVEL_ATLAS        = "spritesleveldefinitive.png";
     public static final String LEVEL_TWO_ATLAS    = "spritesleveldefinitivelvl2.png";
     public static final String LOBBY_ATLAS        = "spriteslobby.png";
@@ -43,7 +43,7 @@ public class LoadSave {
         return new Texture(Gdx.files.internal(fileName));
     }
 
-    public static int[][] GetLevelData() {
+    public static int[][] GetLevelData(int level) {
         Pixmap pm = MapGenerator.generarMapaFinal(LEVEL_ONE_DATA);
 
         int w = pm.getWidth();
@@ -55,7 +55,7 @@ public class LoadSave {
                 int rgba = pm.getPixel(i, j);
                 int r = (rgba >>> 24) & 0xFF;
 
-                int tileType = TileMapping.getTileTypeFromRed(r);
+                int tileType = TileMapping.getTileTypeFromRed(r, level);
 
                 lvlData[j][i] = tileType;
             }

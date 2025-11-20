@@ -24,6 +24,8 @@ public class Crabby extends Enemy {
     private float attackLock = 0f;
     private float hitLock = 0f;
 
+    public int level;
+
     private float scale = 2.5f;
 
     private final Rectangle attackBox = new Rectangle();
@@ -31,11 +33,12 @@ public class Crabby extends Enemy {
     private static final boolean SPRITE_FACES_RIGHT = false;
     private static final float HIT_LOCK_TIME = 0.25f;
 
-    public Crabby(float x, float y, LevelManager lm) {
+    public Crabby(float x, float y, LevelManager lm, int level) {
         this.levelManager = lm;
         this.lvlData = lm.getLevelData();
         this.tileW = lm.getTileWidth();
         this.tileH = lm.getTileHeight();
+        this.level = level;
 
         Texture atlas = Assets.getCrabbyAtlas();
         TextureUtils.prepareTexture(atlas);
@@ -101,17 +104,17 @@ public class Crabby extends Enemy {
         }
 
         float newX = hitbox.x + desiredVx * dt;
-        if (HelpMethods.CanMoveHere(newX, hitbox.y, hitbox.width, hitbox.height, lvlData, tileW, tileH)) {
+        if (HelpMethods.CanMoveHere(newX, hitbox.y, hitbox.width, hitbox.height, lvlData, tileW, tileH, level)) {
             hitbox.x = newX;
         } else {
-            hitbox.x = HelpMethods.GetEntityXPosNextToWall(hitbox, desiredVx * dt, lvlData, tileW, tileH);
+            hitbox.x = HelpMethods.GetEntityXPosNextToWall(hitbox, desiredVx * dt, lvlData, tileW, tileH, level);
         }
 
         float newY = hitbox.y + desiredVy * dt;
-        if (HelpMethods.CanMoveHere(hitbox.x, newY, hitbox.width, hitbox.height, lvlData, tileW, tileH)) {
+        if (HelpMethods.CanMoveHere(hitbox.x, newY, hitbox.width, hitbox.height, lvlData, tileW, tileH, level)) {
             hitbox.y = newY;
         } else {
-            hitbox.y = HelpMethods.GetEntityYPosUnderRoofOrAboveFloor(hitbox, desiredVy * dt, lvlData, tileW, tileH);
+            hitbox.y = HelpMethods.GetEntityYPosUnderRoofOrAboveFloor(hitbox, desiredVy * dt, lvlData, tileW, tileH, level);
         }
 
         updateAnimation(getActionFrameCount());

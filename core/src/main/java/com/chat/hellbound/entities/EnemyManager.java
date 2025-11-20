@@ -17,11 +17,13 @@ public class EnemyManager {
     private static final boolean DEBUG_LOG_HITS = true;
 
     private final LevelManager levelManager;
+    private int level;
     private final ArrayList<Crabby> crabbies = new ArrayList<>();
     private final ArrayList<PendingAttack> pendingEnemyAttacks = new ArrayList<>();
 
-    public EnemyManager(LevelManager lm) {
+    public EnemyManager(LevelManager lm, int level) {
         this.levelManager = lm;
+        this.level = level;
         spawnCrabbies();
         EnemyShared.hookManager(this);
     }
@@ -31,7 +33,7 @@ public class EnemyManager {
         int tileH = levelManager.getTileHeight();
         ArrayList<Vector2> spawns = LoadSave.GetCrabs(tileW, tileH);
         for (Vector2 p : spawns) {
-            Crabby c = new Crabby(p.x, p.y, levelManager);
+            Crabby c = new Crabby(p.x, p.y, levelManager, level);
             crabbies.add(c);
         }
     }

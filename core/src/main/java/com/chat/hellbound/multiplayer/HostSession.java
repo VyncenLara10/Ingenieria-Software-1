@@ -1,13 +1,8 @@
 package com.chat.hellbound.multiplayer;
 
 import com.badlogic.gdx.Gdx;
-import com.chat.hellbound.entities.Player;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -15,128 +10,117 @@ public class HostSession implements Runnable {
 
     private final int port;
     private final String localName;
-    private volatile boolean running = true;
 
     private ServerSocket serverSocket;
     private Socket socket;
     private DataInputStream in;
     private DataOutputStream out;
 
+    private volatile boolean running = false;
     private volatile PlayerSnapshot remoteSnapshot;
-    private volatile String remoteName;
+
+    private volatile String remoteName = "";
+    private volatile int selectedLevel = -1; // 🔥 YA NO TIENE NIVEL POR DEFECTO
 
     public HostSession(int port, String localName) {
         this.port = port;
-        this.localName = localName != null ? localName : "Host";
+        this.localName = localName;
     }
 
     @Override
     public void run() {
         try {
-            Gdx.app.log("NET", "Host: creando ServerSocket en puerto " + port);
+            Gdx.app.log("NET", "Host esperando conexión en puerto " + port);
             serverSocket = new ServerSocket(port);
-            Gdx.app.log("NET", "Host: esperando cliente...");
             socket = serverSocket.accept();
-            Gdx.app.log("NET", "Host: cliente conectado desde " + socket.getInetAddress());
+
+            Gdx.app.log("NET", "Host: cliente conectado");
 
             in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
             out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
 
-            out.writeUTF(localName);
-            out.flush();
-            remoteName = in.readUTF();
-            Gdx.app.log("NET", "Host: nombre remoto = " + remoteName);
+            running = true;
 
+            // 1. Mandar nuestro nombre (sin nivel)
+            sendHandshake();
+
+            // 2. Recibir nombre del cliente
+            receiveHandshake();
+
+            // 3. Loop de red
             while (running) {
-                byte type = in.readByte();
-                if (type == 0) {
-                    float x = in.readFloat();
-                    float y = in.readFloat();
-                    int hp = in.readInt();
+                int type = in.readUnsignedByte();
 
-                    PlayerSnapshot snap = new PlayerSnapshot();
-                    snap.x = x;
-                    snap.y = y;
-                    snap.hp = hp;
+                if (type == 1) {
+                    PlayerSnapshot snap = PlayerSnapshot.readFrom(in);
                     remoteSnapshot = snap;
-                } else {
+                }
+                else if (type == 2) {
+                    String msg = in.readUTF();
+                    if (msg.startsWith("LEVEL:")) {
+                        // el host NO recibe nivel, así que ignoramos
+                    }
                 }
             }
 
-        } catch (IOException e) {
-            Gdx.app.log("NET", "Host: error en red", e);
-            running = false;
+        } catch (Exception e) {
+            Gdx.app.log("NET", "HostSession error", e);
         } finally {
-            close();
+            stop();
         }
     }
 
-    public void stop() {
-        running = false;
-        close();
+    private void sendHandshake() throws IOException {
+        out.writeByte(10);
+        out.writeUTF(localName);
+        out.flush();
     }
 
-    private void close() {
-        Gdx.app.log("NET", "Host: cerrando sockets");
+    private void receiveHandshake() throws IOException {
+        int t = in.readUnsignedByte();
+        if (t == 10) {
+            remoteName = in.readUTF();
+        }
+    }
+
+    public void sendSnapshot(PlayerSnapshot snap) {
+        if (!running) return;
         try {
-            if (in != null) in.close();
-        } catch (IOException ignored) {}
-        try {
-            if (out != null) out.close();
-        } catch (IOException ignored) {}
-        try {
-            if (socket != null) socket.close();
-        } catch (IOException ignored) {}
-        try {
-            if (serverSocket != null) serverSocket.close();
-        } catch (IOException ignored) {}
+            out.writeByte(1);
+            snap.writeTo(out);
+            out.flush();
+        } catch (Exception e) {
+            running = false;
+        }
     }
 
     public PlayerSnapshot getRemoteSnapshot() {
         return remoteSnapshot;
     }
 
-    public void sendLocalSnapshot(Player player) {
-        DataOutputStream localOut = out;
-        if (localOut == null) return;
-
-        PlayerSnapshot snap = new PlayerSnapshot(player);
+    // 🔥 Ahora sí: solo manda el nivel cuando el host realmente lo elige
+    public void setSelectedLevel(int lvl) {
+        selectedLevel = lvl;
         try {
-            synchronized (localOut) {
-                localOut.writeByte(0);
-                localOut.writeFloat(snap.x);
-                localOut.writeFloat(snap.y);
-                localOut.writeInt(snap.hp);
-                localOut.flush();
-            }
-        } catch (IOException e) {
-            Gdx.app.log("NET", "Host: error enviando snapshot", e);
-            running = false;
-            close();
-        }
-    }
-
-    public void sendLevelSelection(int level) {
-        DataOutputStream localOut = out;
-        if (localOut == null) return;
-        try {
-            synchronized (localOut) {
-                localOut.writeByte(1);
-                localOut.writeInt(level);
-                localOut.flush();
-            }
-        } catch (IOException e) {
-            Gdx.app.log("NET", "Host: error enviando nivel", e);
-            running = false;
-            close();
-        }
+            out.writeByte(2);
+            out.writeUTF("LEVEL:" + lvl);
+            out.flush();
+        } catch (Exception ignored) {}
     }
 
     public String getRemoteName() {
         return remoteName;
     }
 
-    public String getLocalName() {
-        return localName;
+    public int getSelectedLevel() {
+        return selectedLevel;
+    }
+
+    public void stop() {
+        running = false;
+        try { if (in != null) in.close(); } catch (Exception ignored) {}
+        try { if (out != null) out.close(); } catch (Exception ignored) {}
+        try { if (socket != null) socket.close(); } catch (Exception ignored) {}
+        try { if (serverSocket != null) serverSocket.close(); } catch (Exception ignored) {}
     }
 }

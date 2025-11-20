@@ -55,30 +55,22 @@ public class GameScreen implements Screen {
     private final boolean DEBUG = false;
 
     private boolean paused = false;
-    private final Rectangle pauseBtnAndroid = new Rectangle();
-    private final Rectangle exitBtnRect = new Rectangle();
+    private Rectangle pauseBtnAndroid = new Rectangle();
+    private Rectangle exitBtnRect = new Rectangle();
 
     private final BitmapFont font = new BitmapFont();
     private final GlyphLayout layout = new GlyphLayout();
 
     private DarknessHandler darknessHandler;
 
-    private int level;
-
     private MultiplayerMode multiplayerMode = MultiplayerMode.OFFLINE;
     private HostSession hostSession;
     private ClientSession clientSession;
     private boolean remoteActive = false;
 
-    public GameScreen(Main game, int level) {
-        this(game, level, MultiplayerMode.OFFLINE, null, null);
-    }
+    private int level;
 
-    public GameScreen(Main game,
-                      int level,
-                      MultiplayerMode mode,
-                      HostSession hostSession,
-                      ClientSession clientSession) {
+    public GameScreen(Main game, int level) {
         this.game = game;
         this.batch = new SpriteBatch();
         this.level = level;
@@ -100,12 +92,12 @@ public class GameScreen implements Screen {
             atlas = LoadSave.GetSpriteAtlas(LoadSave.LEVEL_TWO_ATLAS);
         }
 
-        levelManager = new LevelManager(atlas);
-        enemyManager = new EnemyManager(levelManager);
+        levelManager = new LevelManager(atlas,level);
+        enemyManager = new EnemyManager(levelManager,level);
         bossManager = new BossManager();
         interactiveObject = new InteractiveObject(levelManager, level);
 
-        this.player = new Player(700, 5800, levelManager);
+        this.player = new Player(700, 5800, levelManager,level);
         EnemyShared.hookPlayer(player);
         player.SetObject("SprintBurst");
 
@@ -121,13 +113,15 @@ public class GameScreen implements Screen {
 
         computeUiRects(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         darknessHandler = new DarknessHandler(Gdx.graphics.getWidth() + 500, Gdx.graphics.getHeight() + 500, 2.0f);
+    }
 
+    public GameScreen(Main game, int level, MultiplayerMode mode, HostSession hostSession, ClientSession clientSession) {
+        this(game, level);
         this.multiplayerMode = (mode != null) ? mode : MultiplayerMode.OFFLINE;
         this.hostSession = hostSession;
         this.clientSession = clientSession;
-
         if (this.multiplayerMode != MultiplayerMode.OFFLINE) {
-            this.remotePlayer = new Player(700, 5800, levelManager);
+            this.remotePlayer = new Player(700, 5800, levelManager,level);
         }
     }
 
@@ -152,7 +146,8 @@ public class GameScreen implements Screen {
             player.update(dt);
 
             if (multiplayerMode == MultiplayerMode.HOST && hostSession != null) {
-                hostSession.sendLocalSnapshot(player);
+                hostSession.sendSnapshot(new PlayerSnapshot(player));
+
                 PlayerSnapshot snap = hostSession.getRemoteSnapshot();
                 if (snap != null && remotePlayer != null) {
                     snap.applyTo(remotePlayer);
@@ -162,7 +157,7 @@ public class GameScreen implements Screen {
                     remotePlayer.update(dt);
                 }
             } else if (multiplayerMode == MultiplayerMode.CLIENT && clientSession != null) {
-                clientSession.sendLocalSnapshot(player);
+                clientSession.sendSnapshot(new PlayerSnapshot(player));
                 PlayerSnapshot snap = clientSession.getRemoteSnapshot();
                 if (snap != null && remotePlayer != null) {
                     snap.applyTo(remotePlayer);
@@ -207,15 +202,13 @@ public class GameScreen implements Screen {
                 System.out.println("¡Tree Boss ha aparecido! (3/3 objetos)");
             }
 
-            if (player.isDead()) {
+            if(player.isDead()){
                 game.setScreen(new DeathScreen(game));
             }
-
             boolean bossDefeated = bossManager.getActiveBoss() == null || bossManager.getActiveBoss().isDefeated();
-            if (interactiveObject.allCollected() && bossDefeated) {
+            if (interactiveObject.allCollected() && bossDefeated){
                 game.setScreen(new WinScreen(game));
             }
-
             camController.update(dt);
         } else {
             handlePauseOverlayInput();
@@ -264,15 +257,7 @@ public class GameScreen implements Screen {
             debugSR.end();
         }
 
-        darknessHandler.render(
-            batch,
-            getPlayerCenterX(),
-            getPlayerCenterY(),
-            camera.position.x,
-            camera.position.y,
-            viewport.getWorldWidth(),
-            viewport.getWorldHeight()
-        );
+        darknessHandler.render(batch, getPlayerCenterX(), getPlayerCenterY(), camera.position.x, camera.position.y, viewport.getWorldWidth(), viewport.getWorldHeight());
 
         renderUiAndPauseOverlay();
 

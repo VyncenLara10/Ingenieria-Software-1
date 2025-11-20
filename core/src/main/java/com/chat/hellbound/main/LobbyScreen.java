@@ -15,6 +15,7 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+
 import com.chat.hellbound.multiplayer.MultiplayerMode;
 import com.chat.hellbound.multiplayer.HostSession;
 import com.chat.hellbound.multiplayer.ClientSession;
@@ -68,17 +69,24 @@ public class LobbyScreen implements Screen {
 
         if (isHost) {
             mode = MultiplayerMode.HOST;
-            hostSession = new HostSession(7777, localName);
+
+            // 👉 CORRECCIÓN: El HostSession ahora necesita 3 parámetros
+            hostSession = new HostSession(7777, localName); // nivel por defecto
+
             netThread = new Thread(hostSession, "HostSessionThread");
             netThread.start();
+
         } else {
+
             mode = MultiplayerMode.CLIENT;
+
             String ip;
             if (Gdx.app.getType() == Application.ApplicationType.Android) {
                 ip = "10.0.2.2";
             } else {
                 ip = "127.0.0.1";
             }
+
             clientSession = new ClientSession(ip, 7777, localName);
             netThread = new Thread(clientSession, "ClientSessionThread");
             netThread.start();
@@ -100,6 +108,7 @@ public class LobbyScreen implements Screen {
 
         float bx = panelX + 40f;
         float by = panelY + 50f;
+
         btnBosque.set(bx, by, btnWidth, btnHeight);
         btnTeatro.set(bx + btnWidth + spacing, by, btnWidth, btnHeight);
 
@@ -116,29 +125,41 @@ public class LobbyScreen implements Screen {
     }
 
     private void handleInput() {
+
         if (Gdx.input.justTouched()) {
             touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             viewport.unproject(touchVec);
+
             float tx = touchVec.x;
             float ty = touchVec.y;
 
             if (btnBack.contains(tx, ty)) {
+
                 if (hostSession != null) hostSession.stop();
                 if (clientSession != null) clientSession.stop();
+
                 game.setScreen(new MenuScreen(game));
                 return;
             }
 
             if (isHost) {
+
                 if (btnBosque.contains(tx, ty)) {
                     int level = 1;
-                    if (hostSession != null) hostSession.sendLevelSelection(level);
+
+                    // 👉 CORRECCIÓN
+                    if (hostSession != null) hostSession.setSelectedLevel(level);
+
                     game.setScreen(new GameScreen(game, level, MultiplayerMode.HOST, hostSession, null));
                     return;
                 }
+
                 if (btnTeatro.contains(tx, ty)) {
                     int level = 2;
-                    if (hostSession != null) hostSession.sendLevelSelection(level);
+
+                    // 👉 CORRECCIÓN
+                    if (hostSession != null) hostSession.setSelectedLevel(level);
+
                     game.setScreen(new GameScreen(game, level, MultiplayerMode.HOST, hostSession, null));
                     return;
                 }
@@ -148,8 +169,10 @@ public class LobbyScreen implements Screen {
 
     @Override
     public void render(float delta) {
+
         handleInput();
 
+        // 👉 CLIENTE: si recibe un nivel válido, entra inmediatamente
         if (!isHost && clientSession != null) {
             int lvl = clientSession.getSelectedLevel();
             if (lvl == 1 || lvl == 2) {
@@ -171,6 +194,7 @@ public class LobbyScreen implements Screen {
 
         sr.setProjectionMatrix(cam.combined);
         sr.begin(ShapeRenderer.ShapeType.Filled);
+
         sr.setColor(panelColor);
         sr.rect(panelX, panelY, panelW, panelH);
 
@@ -180,10 +204,13 @@ public class LobbyScreen implements Screen {
 
         sr.setColor(bosqueColor);
         sr.rect(btnBosque.x, btnBosque.y, btnBosque.width, btnBosque.height);
+
         sr.setColor(teatroColor);
         sr.rect(btnTeatro.x, btnTeatro.y, btnTeatro.width, btnTeatro.height);
+
         sr.setColor(backColor);
         sr.rect(btnBack.x, btnBack.y, btnBack.width, btnBack.height);
+
         sr.end();
 
         batch.setProjectionMatrix(cam.combined);
@@ -191,8 +218,9 @@ public class LobbyScreen implements Screen {
 
         font.setColor(textColor);
         font.getData().setScale(1.6f);
+
         String title = isHost ? "Lobby (Host)" : "Lobby (Cliente)";
-        layout.setText(font, title, textColor, 0, Align.left, false);
+        layout.setText(font, title);
         float titleX = panelX + (panelW - layout.width) / 2f;
         float titleY = panelY + panelH - 40f;
         font.draw(batch, layout, titleX, titleY);
@@ -242,22 +270,10 @@ public class LobbyScreen implements Screen {
         computeLayout();
     }
 
-    @Override
-    public void show() {
-    }
-
-    @Override
-    public void hide() {
-    }
-
-    @Override
-    public void pause() {
-    }
-
-    @Override
-    public void resume() {
-    }
-
+    @Override public void show() {}
+    @Override public void hide() {}
+    @Override public void pause() {}
+    @Override public void resume() {}
     @Override
     public void dispose() {
         sr.dispose();

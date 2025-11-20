@@ -1,13 +1,8 @@
 package com.chat.hellbound.multiplayer;
 
 import com.badlogic.gdx.Gdx;
-import com.chat.hellbound.entities.Player;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 
 public class ClientSession implements Runnable {
@@ -15,115 +10,100 @@ public class ClientSession implements Runnable {
     private final String host;
     private final int port;
     private final String localName;
-    private volatile boolean running = true;
 
     private Socket socket;
     private DataInputStream in;
     private DataOutputStream out;
 
+    private volatile boolean running = false;
     private volatile PlayerSnapshot remoteSnapshot;
-    private volatile String remoteName;
-    private volatile int selectedLevel = 0;
 
-    public ClientSession(String host, int port, String localName) {
+    private volatile String remoteName = "";
+    private volatile int selectedLevel = -1;
+
+    public ClientSession(String host, int port, String name) {
         this.host = host;
         this.port = port;
-        this.localName = localName != null ? localName : "Client";
+        this.localName = name;
     }
 
     @Override
     public void run() {
         try {
-            Gdx.app.log("NET", "Client: conectando a " + host + ":" + port);
             socket = new Socket(host, port);
-            Gdx.app.log("NET", "Client: conectado a " + socket.getRemoteSocketAddress());
 
             in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
             out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
 
-            out.writeUTF(localName);
-            out.flush();
-            remoteName = in.readUTF();
-            Gdx.app.log("NET", "Client: nombre remoto = " + remoteName);
+            running = true;
 
+            // 1. Recibir nombre del host primero
+            receiveHandshake();
+
+            // 2. Mandar nuestro nombre
+            sendHandshake();
+
+            // 3. Loop de red
             while (running) {
-                byte type = in.readByte();
-                if (type == 0) {
-                    float x = in.readFloat();
-                    float y = in.readFloat();
-                    int hp = in.readInt();
+                int type = in.readUnsignedByte();
 
-                    PlayerSnapshot snap = new PlayerSnapshot();
-                    snap.x = x;
-                    snap.y = y;
-                    snap.hp = hp;
+                if (type == 1) {
+                    PlayerSnapshot snap = PlayerSnapshot.readFrom(in);
                     remoteSnapshot = snap;
-                } else if (type == 1) {
-                    int lvl = in.readInt();
-                    selectedLevel = lvl;
-                    Gdx.app.log("NET", "Client: nivel seleccionado = " + lvl);
+                }
+                else if (type == 2) {
+                    String msg = in.readUTF();
+                    if (msg.startsWith("LEVEL:")) {
+                        selectedLevel = Integer.parseInt(msg.substring(6));
+                    }
                 }
             }
 
-        } catch (IOException e) {
-            Gdx.app.log("NET", "Client: error en red", e);
-            running = false;
+        } catch (Exception e) {
+            Gdx.app.log("NET", "Client error", e);
         } finally {
-            close();
+            stop();
         }
     }
 
-    public void stop() {
-        running = false;
-        close();
+    private void receiveHandshake() throws IOException {
+        int t = in.readUnsignedByte();
+        if (t == 10) {
+            remoteName = in.readUTF();
+        }
     }
 
-    private void close() {
-        Gdx.app.log("NET", "Client: cerrando sockets");
+    private void sendHandshake() throws IOException {
+        out.writeByte(10);
+        out.writeUTF(localName);
+        out.flush();
+    }
+
+    public void sendSnapshot(PlayerSnapshot snap) {
+        if (!running) return;
         try {
-            if (in != null) in.close();
-        } catch (IOException ignored) {}
-        try {
-            if (out != null) out.close();
-        } catch (IOException ignored) {}
-        try {
-            if (socket != null) socket.close();
-        } catch (IOException ignored) {}
+            out.writeByte(1);
+            snap.writeTo(out);
+            out.flush();
+        } catch (Exception ignored) {}
     }
 
     public PlayerSnapshot getRemoteSnapshot() {
         return remoteSnapshot;
     }
 
-    public void sendLocalSnapshot(Player player) {
-        DataOutputStream localOut = out;
-        if (localOut == null) return;
-
-        PlayerSnapshot snap = new PlayerSnapshot(player);
-        try {
-            synchronized (localOut) {
-                localOut.writeByte(0);
-                localOut.writeFloat(snap.x);
-                localOut.writeFloat(snap.y);
-                localOut.writeInt(snap.hp);
-                localOut.flush();
-            }
-        } catch (IOException e) {
-            Gdx.app.log("NET", "Client: error enviando snapshot", e);
-            running = false;
-            close();
-        }
-    }
-
     public String getRemoteName() {
         return remoteName;
     }
 
-    public String getLocalName() {
-        return localName;
-    }
-
     public int getSelectedLevel() {
         return selectedLevel;
+    }
+
+    public void stop() {
+        running = false;
+        try { if (in != null) in.close(); } catch (Exception ignored) {}
+        try { if (out != null) out.close(); } catch (Exception ignored) {}
+        try { if (socket != null) socket.close(); } catch (Exception ignored) {}
     }
 }

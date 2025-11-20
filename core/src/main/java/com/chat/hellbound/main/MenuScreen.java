@@ -139,12 +139,12 @@ public class MenuScreen implements Screen {
             }
             if (btnHost.contains(tx, ty)) {
                 String name = playerName.trim().isEmpty() ? "Host" : playerName.trim();
-                game.setScreen(new LobbyScreen(game, true, name));
+                game.setScreen(new LobbyScreen(game, true,name));
                 return;
             }
             if (btnJoin.contains(tx, ty)) {
                 String name = playerName.trim().isEmpty() ? "Client" : playerName.trim();
-                game.setScreen(new LobbyScreen(game, false, name));
+                game.setScreen(new LobbyScreen(game, false,name));
                 return;
             }
             if (btnExit.contains(tx, ty)) {

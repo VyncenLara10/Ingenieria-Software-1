@@ -22,7 +22,7 @@ public class Player extends Entity implements CameraTarget {
     private int aniIndex = 0, aniTick = 0, aniSpeed = ANI_SPEED;
     private float vx = 0f, vy = 0f;
     private boolean facingRight = true;
-    private float scale = 2.5f;
+    private float scale = 0.09f;
     private float BonusSpeed = 1f;
 
     private final LevelManager levelManager;
@@ -37,12 +37,13 @@ public class Player extends Entity implements CameraTarget {
     private float attackActiveTimer = 0f;
     private boolean attackDealtThisWindow = false;
     private float cooldown = 0f;
+    private int level;
 
     private final Vector2 camFocus = new Vector2();
 
     private String object = "";
 
-    public Player(float startX, float startY, LevelManager levelManager) {
+    public Player(float startX, float startY, LevelManager levelManager,int level) {
         this.object = object;
         this.BonusSpeed = BonusSpeed;
         this.cooldown = cooldown;
@@ -50,6 +51,7 @@ public class Player extends Entity implements CameraTarget {
         this.lvlData = levelManager.getLevelData();
         this.tileW = levelManager.getTileWidth();
         this.tileH = levelManager.getTileHeight();
+        this.level = level;
         loadAnimations();
         float hbW = FRAME_W * (scale*0.8f);
         float hbH = FRAME_H * (scale*0.8f);
@@ -105,7 +107,7 @@ public class Player extends Entity implements CameraTarget {
             float nx = hitbox.x + vx * dt;
 
             if (HelpMethods.CanMoveHere(nx, hitbox.y, hitbox.width, hitbox.height,
-                lvlData, tileW, tileH))
+                lvlData, tileW, tileH, level))
             {
                 hitbox.x = nx;
             } else {
@@ -117,7 +119,7 @@ public class Player extends Entity implements CameraTarget {
             float ny = hitbox.y + vy * dt;
 
             if (HelpMethods.CanMoveHere(hitbox.x, ny, hitbox.width, hitbox.height,
-                lvlData, tileW, tileH))
+                lvlData, tileW, tileH, level))
             {
                 hitbox.y = ny;
             } else {
@@ -129,7 +131,27 @@ public class Player extends Entity implements CameraTarget {
         if (ix > 0.1f)  facingRight = true;
         if (ix < -0.1f) facingRight = false;
 
-        int desiredAction = (Math.abs(ix) > 0.05f || Math.abs(iy) > 0.05f) ? RUNNING : IDLE;
+        final float DEADZONE = 0.05f;
+
+        float absX = Math.abs(ix);
+        float absY = Math.abs(iy);
+
+        int desiredAction;
+
+        if (absX < DEADZONE && absY < DEADZONE) {
+            desiredAction = IDLE;
+        }
+
+        else if (absX > absY) {
+            if (ix > 0) desiredAction = RUNNING;
+            else        desiredAction = RUNNING;
+        }
+
+        else {
+            if (iy > 0) desiredAction = UP;
+            else        desiredAction = FALLING;
+        }
+
         setAction(desiredAction);
 
         attackCd = Math.max(0f, attackCd - dt);

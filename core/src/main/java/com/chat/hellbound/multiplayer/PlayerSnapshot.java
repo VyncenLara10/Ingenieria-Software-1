@@ -3,6 +3,10 @@ package com.chat.hellbound.multiplayer;
 import com.chat.hellbound.entities.Player;
 import com.badlogic.gdx.math.Rectangle;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
 public class PlayerSnapshot {
 
     public float x;
@@ -18,10 +22,32 @@ public class PlayerSnapshot {
         this.hp = player.getHp();
     }
 
+    // 🔥 NECESARIO PARA HostSession y ClientSession
+    public static PlayerSnapshot fromPlayer(Player player) {
+        return new PlayerSnapshot(player);
+    }
+
+    // 🔥 NECESARIO para enviar por red
+    public void writeTo(DataOutputStream out) throws IOException {
+        out.writeFloat(x);
+        out.writeFloat(y);
+        out.writeInt(hp);
+    }
+
+    // 🔥 NECESARIO para recibir por red
+    public static PlayerSnapshot readFrom(DataInputStream in) throws IOException {
+        PlayerSnapshot snap = new PlayerSnapshot();
+        snap.x = in.readFloat();
+        snap.y = in.readFloat();
+        snap.hp = in.readInt();
+        return snap;
+    }
+
     public void applyTo(Player player) {
-        // Solo movemos posición por ahora
+        // Mueve al jugador remoto
         player.setNetworkPosition(x, y);
-        // Si luego quieres sincronizar HP, aquí podrías hacerlo
-        // pero tendríamos que agregar un setter de HP “desde red”.
+
+        // Si quieres sincronizar HP real, luego agregamos:
+        // player.setNetworkHp(hp);
     }
 }
