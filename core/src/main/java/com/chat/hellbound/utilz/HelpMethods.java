@@ -5,23 +5,24 @@ import com.badlogic.gdx.math.Rectangle;
 public class HelpMethods {
 
     public static boolean CanMoveHere(float x, float y, float width, float height,
-                                      int[][] lvlData, int tileW, int tileH, int level) {
+                                      int[][] lvlData, int tileW, int tileH) {
         float xCenter = x + width / 2;
         float yCenter = y + height / 2;
 
         return !(
-            IsSolid(x, y, lvlData, tileW, tileH, level) ||
-                IsSolid(x + width, y, lvlData, tileW, tileH, level) ||
-                IsSolid(x, y + height, lvlData, tileW, tileH, level) ||
-                IsSolid(x + width, y + height, lvlData, tileW, tileH, level) ||
-                IsSolid(xCenter, y, lvlData, tileW, tileH, level) ||
-                IsSolid(xCenter, y + height, lvlData, tileW, tileH, level) ||
-                IsSolid(x, yCenter, lvlData, tileW, tileH, level) ||
-                IsSolid(x + width, yCenter, lvlData, tileW, tileH, level)
+            IsSolid(x, y, lvlData, tileW, tileH) ||
+                IsSolid(x + width, y, lvlData, tileW, tileH) ||
+                IsSolid(x, y + height, lvlData, tileW, tileH) ||
+                IsSolid(x + width, y + height, lvlData, tileW, tileH) ||
+                IsSolid(xCenter, y, lvlData, tileW, tileH) ||
+                IsSolid(xCenter, y + height, lvlData, tileW, tileH) ||
+                IsSolid(x, yCenter, lvlData, tileW, tileH) ||
+                IsSolid(x + width, yCenter, lvlData, tileW, tileH)
         );
     }
 
-    public static boolean IsSolid(float x, float y, int[][] lvlData, int tileW, int tileH, int level) {
+
+    public static boolean IsSolid(float x, float y, int[][] lvlData, int tileW, int tileH) {
         if (x < 0 || y < 0) return true;
 
         int rows = lvlData.length;
@@ -35,7 +36,7 @@ public class HelpMethods {
 
         int tileId = lvlData[tileY][tileX];
 
-        if (!TileMapping.isSolid(tileId, level))
+        if (!TileMapping.isSolid(tileId))
             return false;
 
         float worldX = tileX * tileW;
@@ -43,55 +44,34 @@ public class HelpMethods {
 
         Rectangle hitbox = null;
 
-        if (level == 1){
-            switch (tileId) {
-                case TileMapping.TREE:
-                    hitbox = createCenteredHitbox(worldX, worldY, tileW, tileH, 0.3f, 0.8f);
-                    break;
+        switch (tileId) {
+            case TileMapping.TREE:
+                hitbox = createCenteredHitbox(worldX, worldY, tileW, tileH, 0.3f, 0.8f);
+                break;
 
-                case TileMapping.ROCK1:
-                    hitbox = createCenteredHitbox(worldX, worldY, tileW, tileH, 0.4f, 0.3f);
-                    break;
+            case TileMapping.ROCK1:
+                hitbox = createCenteredHitbox(worldX, worldY, tileW, tileH, 0.4f, 0.3f);
+                break;
 
-                case TileMapping.ROCK2:
-                    hitbox = createCenteredHitbox(worldX, worldY, tileW, tileH, 0.4f, 0.3f);
-                    break;
+            case TileMapping.ROCK2:
+                hitbox = createCenteredHitbox(worldX, worldY, tileW, tileH, 0.4f, 0.3f);
+                break;
 
-                case TileMapping.TRUNK1:
-                    hitbox = createCenteredHitbox(worldX, worldY, tileW, tileH, 0.8f, 0.3f);
-                    break;
+            case TileMapping.TRUNK1:
+                hitbox = createCenteredHitbox(worldX, worldY, tileW, tileH, 0.8f, 0.3f);
+                break;
 
-                case TileMapping.TRUNK2:
-                    hitbox = createCenteredHitbox(worldX, worldY, tileW, tileH, 0.4f, 0.5f);
-                    break;
+            case TileMapping.TRUNK2:
+                hitbox = createCenteredHitbox(worldX, worldY, tileW, tileH, 0.4f, 0.5f);
+                break;
 
-                case TileMapping.TRUNK3:
-                    hitbox = createCenteredHitbox(worldX, worldY, tileW, tileH, 0.4f, 0.4f);
-                    break;
+            case TileMapping.TRUNK3:
+                hitbox = createCenteredHitbox(worldX, worldY, tileW, tileH, 0.4f, 0.4f);
+                break;
 
-                default:
-                    hitbox = new Rectangle(worldX, worldY, tileW, tileH);
-                    break;
-            }
-        }
-        if (level == 2){
-            switch (tileId) {
-                case TileMapping.REFLECTOR:
-                    hitbox = createCenteredHitbox(worldX, worldY, tileW, tileH, 0.3f, 0.8f);
-                    break;
-
-                case TileMapping.ARMCHAIRS:
-                    hitbox = createCenteredHitbox(worldX, worldY, tileW, tileH, 0.5f, 0.6f);
-                    break;
-
-                case TileMapping.COSTAL:
-                    hitbox = createCenteredHitbox(worldX, worldY, tileW, tileH, 0.3f, 0.3f);
-                    break;
-
-                default:
-                    hitbox = new Rectangle(worldX, worldY, tileW, tileH);
-                    break;
-            }
+            default:
+                hitbox = new Rectangle(worldX, worldY, tileW, tileH);
+                break;
         }
 
         return hitbox.overlaps(new Rectangle(x, y, 1, 1));
@@ -112,20 +92,21 @@ public class HelpMethods {
     }
 
     public static float GetEntityXPosNextToWall(Rectangle hitbox, float xDelta,
-                                                int[][] lvlData, int tileW, int tileH, int level) {
-        if (xDelta > 0) {
+                                                int[][] lvlData, int tileW, int tileH) {
+        if (xDelta > 0) { // moviéndose a la derecha
             int tileX = (int)((hitbox.x + hitbox.width + xDelta) / tileW);
-            float newX = (tileX * tileW) - hitbox.width;
+            float newX = tileX * tileW - hitbox.width - 0.05f;
 
-            if (IsSolid(hitbox.x + hitbox.width + xDelta, hitbox.y + hitbox.height / 2, lvlData, tileW, tileH, level))
+            // Solo ajusta si realmente hay colisión
+            if (IsSolid(hitbox.x + hitbox.width + xDelta, hitbox.y + hitbox.height / 2, lvlData, tileW, tileH))
                 return newX;
             return hitbox.x + xDelta;
 
-        } else if (xDelta < 0) {
+        } else if (xDelta < 0) { // moviéndose a la izquierda
             int tileX = (int)((hitbox.x + xDelta) / tileW);
-            float newX = (tileX + 1) * tileW;
+            float newX = (tileX + 1) * tileW + 0.05f;
 
-            if (IsSolid(hitbox.x + xDelta, hitbox.y + hitbox.height / 2, lvlData, tileW, tileH, level))
+            if (IsSolid(hitbox.x + xDelta, hitbox.y + hitbox.height / 2, lvlData, tileW, tileH))
                 return newX;
             return hitbox.x + xDelta;
         }
@@ -134,20 +115,20 @@ public class HelpMethods {
     }
 
     public static float GetEntityYPosUnderRoofOrAboveFloor(Rectangle hitbox, float yDelta,
-                                                           int[][] lvlData, int tileW, int tileH, int level) {
-        if (yDelta > 0) {
+                                                           int[][] lvlData, int tileW, int tileH) {
+        if (yDelta > 0) { // subiendo - techo
             int tileY = (int)((hitbox.y + hitbox.height + yDelta) / tileH);
-            float newY = (tileY * tileH) - hitbox.height;
+            float newY = tileY * tileH - hitbox.height - 0.05f;
 
-            if (IsSolid(hitbox.x + hitbox.width / 2, hitbox.y + hitbox.height + yDelta, lvlData, tileW, tileH, level))
+            if (IsSolid(hitbox.x + hitbox.width / 2, hitbox.y + hitbox.height + yDelta, lvlData, tileW, tileH))
                 return newY;
             return hitbox.y + yDelta;
 
-        } else if (yDelta < 0) {
+        } else if (yDelta < 0) { // bajando - piso
             int tileY = (int)((hitbox.y + yDelta) / tileH);
-            float newY = (tileY + 1) * tileH;
+            float newY = (tileY + 1) * tileH + 0.05f;
 
-            if (IsSolid(hitbox.x + hitbox.width / 2, hitbox.y + yDelta, lvlData, tileW, tileH, level))
+            if (IsSolid(hitbox.x + hitbox.width / 2, hitbox.y + yDelta, lvlData, tileW, tileH))
                 return newY;
             return hitbox.y + yDelta;
         }
@@ -156,10 +137,11 @@ public class HelpMethods {
     }
 
     public static boolean IsEntityOnFloor(Rectangle hitbox,
-                                          int[][] lvlData, int tileW, int tileH, int level) {
+                                          int[][] lvlData, int tileW, int tileH) {
+        // Un solo punto central inferior, evita falsos positivos
         float xCenter = hitbox.x + hitbox.width / 2f;
         float yBelow = hitbox.y - 0.5f;
-        return IsSolid(xCenter, yBelow, lvlData, tileW, tileH, level);
+        return IsSolid(xCenter, yBelow, lvlData, tileW, tileH);
     }
 
 }

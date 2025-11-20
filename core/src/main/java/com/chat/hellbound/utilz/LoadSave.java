@@ -41,7 +41,7 @@ public class LoadSave {
         return new Texture(Gdx.files.internal(fileName));
     }
 
-    public static int[][] GetLevelData(int level) {
+    public static int[][] GetLevelData() {
         Pixmap pm = MapGenerator.generarMapaFinal(LEVEL_ONE_DATA);
 
         int w = pm.getWidth();
@@ -53,7 +53,7 @@ public class LoadSave {
                 int rgba = pm.getPixel(i, j);
                 int r = (rgba >>> 24) & 0xFF;
 
-                int tileType = TileMapping.getTileTypeFromRed(r, level);
+                int tileType = TileMapping.getTileTypeFromRed(r);
 
                 lvlData[j][i] = tileType;
             }
