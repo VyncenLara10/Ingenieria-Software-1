@@ -70,6 +70,8 @@ public class GameScreen implements Screen {
         this.viewport = new FitViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT, camera);
         this.viewport.apply();
 
+        InputController.setViewport(viewport);
+
         this.touchControls = new TouchControls();
 
         camera.position.set(Constants.WORLD_WIDTH / 2f, Constants.WORLD_HEIGHT / 2f, 0f);
