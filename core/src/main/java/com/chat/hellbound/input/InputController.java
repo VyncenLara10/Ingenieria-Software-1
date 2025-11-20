@@ -37,19 +37,20 @@ public class InputController {
 
     private static Viewport viewport = null;
 
-    // ------------------------------
-    // NUEVO → para conectar el viewport
-    // ------------------------------
+    //===========================================
+    //  NUEVO: Recibir Viewport del GameScreen
+    //===========================================
     public static void setViewport(Viewport vp) {
         viewport = vp;
+        invalidateLayout();
     }
 
-    // Convertir touch a coordenadas del mundo dentro del viewport
+    // Screen → Viewport → Coordenadas finales
     private static Vector2 toViewportCoords(float screenX, float screenY) {
         if (viewport == null) return new Vector2(screenX, screenY);
 
         Vector2 out = new Vector2(screenX, screenY);
-        viewport.unproject(out); // ← convierte a coords donde realmente dibujas
+        viewport.unproject(out);
         return out;
     }
 
@@ -61,6 +62,9 @@ public class InputController {
         layoutDirty = true;
     }
 
+    //===========================================
+    //       BUCLE PRINCIPAL DE INPUT
+    //===========================================
     public static void update() {
         attackPressedThisFrame = false;
         activeAvility = false;
@@ -73,12 +77,17 @@ public class InputController {
         }
     }
 
+    //===========================================
+    //       INPUT PARA PC
+    //===========================================
     private static void pollDesktop() {
         float x = 0f, y = 0f;
+
         if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT))  x -= 1f;
         if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) x += 1f;
         if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP))    y += 1f;
         if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN))  y -= 1f;
+
         xAxis = x;
         yAxis = y;
 
@@ -88,6 +97,7 @@ public class InputController {
         if (Gdx.input.isKeyJustPressed(Input.Keys.K)) pressed = true;
         if (Gdx.input.isKeyJustPressed(Input.Keys.Z)) pressed = true;
         if (Gdx.input.isKeyJustPressed(Input.Keys.X)) pressed = true;
+
         attackPressedThisFrame = pressed;
 
         boolean ap = false;
@@ -95,9 +105,13 @@ public class InputController {
         activeAvility = ap;
     }
 
+    //===========================================
+    //            INPUT PARA ANDROID
+    //===========================================
     private static void pollTouch() {
         float x = 0f, y = 0f;
 
+        // Reset pointers cuando se levanten
         if (joyPointer != -1 && !Gdx.input.isTouched(joyPointer)) joyPointer = -1;
         if (atkPointer != -1 && !Gdx.input.isTouched(atkPointer)) atkPointer = -1;
         if (abiPointer != -1 && !Gdx.input.isTouched(abiPointer)) abiPointer = -1;
@@ -108,14 +122,13 @@ public class InputController {
         int maxP = 20;
 
         for (int p = 0; p < maxP; p++) {
+
             if (!Gdx.input.isTouched(p)) continue;
 
             float rawX = Gdx.input.getX(p);
             float rawY = Gdx.input.getY(p);
 
-            // ------------------------------
-            // NUEVO → convertir coords
-            // ------------------------------
+            // Convertir a coords del viewport real
             Vector2 v = toViewportCoords(rawX, rawY);
             float sx = v.x;
             float sy = v.y;
@@ -157,7 +170,7 @@ public class InputController {
             }
         }
 
-        // Joystick movimiento
+        // Movimiento joystick
         if (joyPointer != -1 && Gdx.input.isTouched(joyPointer)) {
             float rawX = Gdx.input.getX(joyPointer);
             float rawY = Gdx.input.getY(joyPointer);
@@ -168,11 +181,13 @@ public class InputController {
 
             float dx = sx - joyCX;
             float dy = sy - joyCY;
-            float len = (float) Math.sqrt(dx*dx + dy*dy);
+            float len = (float) Math.sqrt(dx * dx + dy * dy);
+
             if (len > 0.0001f) {
                 float m = Math.min(1f, len / joyR);
                 float nx = dx / len;
                 float ny = dy / len;
+
                 if (m < JOY_DEADZONE) {
                     x = 0f; y = 0f;
                 } else {
@@ -189,17 +204,23 @@ public class InputController {
         activeAvility = newAbility;
     }
 
+    //===========================================
+    //                 HELPERS
+    //===========================================
     private static boolean isInsideScaled(float x, float y, float cx, float cy, float r, float scale) {
         float rr = r * scale;
         float dx = x - cx, dy = y - cy;
-        return dx*dx + dy*dy <= rr*rr;
+        return dx * dx + dy * dy <= rr * rr;
     }
 
     private static float dist2(float x, float y, float cx, float cy) {
         float dx = x - cx, dy = y - cy;
-        return dx*dx + dy*dy;
+        return dx * dx + dy * dy;
     }
 
+    //===========================================
+    //             CALCULO DEL LAYOUT
+    //===========================================
     private static void updateLayoutIfNeeded() {
         if (!layoutDirty) return;
 
@@ -214,9 +235,10 @@ public class InputController {
         float localAtkCX = sw - (MARGIN + localAtkR);
         float localAtkCY = MARGIN + localAtkR;
 
-        float localAbiR  = localAtkR * 0.85f;
+        float localAbiR = localAtkR * 0.85f;
         float localAbiCX = localAtkCX;
         float localAbiCY = localAtkCY + localAtkR + MARGIN + localAbiR;
+
         float abiCYMax = sh - (MARGIN + localAbiR);
         if (localAbiCY > abiCYMax) localAbiCY = abiCYMax;
 
@@ -235,8 +257,13 @@ public class InputController {
         layoutDirty = false;
     }
 
-    public static void invalidateLayout() { layoutDirty = true; }
+    public static void invalidateLayout() {
+        layoutDirty = true;
+    }
 
+    //===========================================
+    //         GETTERS QUE TÚ USAS
+    //===========================================
     public static boolean attackPressedThisFrame() { return attackPressedThisFrame; }
     public static boolean activeAvilityPressed(){ return activeAvility; }
 

@@ -66,6 +66,13 @@ public class GameScreen implements Screen {
         this.viewport.apply();
 
         InputController.setViewport(viewport);
+        InputController.setViewportBounds(
+            (int) viewport.getScreenX(),
+            (int) viewport.getScreenY(),
+            (int) viewport.getScreenWidth(),
+            (int) viewport.getScreenHeight()
+        );
+
 
         this.touchControls = new TouchControls();
 
@@ -262,13 +269,6 @@ public class GameScreen implements Screen {
         InputController.invalidateLayout();
         computeUiRects(width, height);
         darknessHandler.rebuild(width, height);
-        int vpX = viewport.getScreenX();
-        int vpY = viewport.getScreenY();
-        int vpW = viewport.getScreenWidth();
-        int vpH = viewport.getScreenHeight();
-
-        // Enviar al InputController
-        InputController.setViewportBounds(vpX, vpY, vpW, vpH);
     }
 
     @Override public void pause() {}
