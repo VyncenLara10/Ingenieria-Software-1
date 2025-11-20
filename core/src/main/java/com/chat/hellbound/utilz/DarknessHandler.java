@@ -77,17 +77,14 @@ public class DarknessHandler {
         final float cy = size / 2f;
         final float maxR = size / 2f;
 
-        // ===== PARÁMETROS IMPORTANTES - AJUSTA SI QUIERES =====
-        final float innerRadiusRatio = 0.02f; // 2% del radio total -> área clara muy pequeña
-        final float outerRadiusRatio = 0.07f; // 6% del radio total -> en este radio el overlay ya es negro total
-        final float falloffPow = 1.8f;        // potencia de la transición: <2 para suavizar, >2 para concentrar
-        // =====================================================
+        final float innerRadiusRatio = 0.02f;
+        final float outerRadiusRatio = 0.09f;
+        final float falloffPow = 1.8f;
 
         final float innerR = maxR * innerRadiusRatio;
         final float outerR = maxR * outerRadiusRatio;
         final int aMax = (int) (alpha * 255f);
 
-        // pintamos: fuera de outerR -> aMax; dentro innerR -> 0;
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
                 float dx = x - cx;
