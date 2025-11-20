@@ -20,12 +20,17 @@ public class Assets {
         manager.load(LoadSave.WIN_OBJ1_MAP2, Texture.class);
         manager.load(LoadSave.WIN_OBJ2_MAP2, Texture.class);
         manager.load(LoadSave.WIN_OBJ3_MAP2, Texture.class);
+        manager.load(LoadSave.TREE_BOSS_SPRITE, Texture.class);
+        manager.load(LoadSave.HELLGUARDIAN, Texture.class);
 
         manager.finishLoading();
     }
 
     public static Texture getPlayerAtlas() {
         return manager.get(LoadSave.PLAYER_ATLAS, Texture.class);
+    }
+    public static Texture getHellGuardianAtlas() {
+        return manager.get(LoadSave.HELLGUARDIAN, Texture.class);
     }
 
     public static Texture getLevelAtlas() {
@@ -34,6 +39,10 @@ public class Assets {
 
     public static Texture getCrabbyAtlas() {
         return manager.get(LoadSave.CRABBY_SPRITE, Texture.class);
+    }
+
+    public static Texture getTreeBossAtlas() {
+    return manager.get(LoadSave.TREE_BOSS_SPRITE, Texture.class);
     }
 
     public static Texture getWinObjectAtlas(int level, int type) {

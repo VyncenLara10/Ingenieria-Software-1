@@ -11,10 +11,14 @@ import java.util.Iterator;
 public class InteractiveObject {
     private final LevelManager levelManager;
     private final ArrayList<WinObject> winObjects = new ArrayList<>();
+    private int totalObjects;
+    private int collectedCount;
 
     public InteractiveObject(LevelManager lm, int level) {
         this.levelManager = lm;
+        this.collectedCount = 0;
         spawnObjects(level);
+        this.totalObjects = winObjects.size();
     }
 
     private void spawnObjects(int level) {
@@ -28,18 +32,30 @@ public class InteractiveObject {
     }
 
     public boolean allCollected() {
-        for (WinObject obj : winObjects) {
-            if (!obj.isCollected()) {
-                return false; // si alguno aún no se recogió, falta
-            }
-        }
-        return true; // todos fueron recogidos
+        return collectedCount >= totalObjects;
+    }
+
+    public int getCollectedCount() {
+        return collectedCount;
+    }
+
+    public int getTotalObjects() {
+        return totalObjects;
+    }
+
+    public float getCollectionProgress() {
+        if (totalObjects == 0) return 1f;
+        return (float) collectedCount / totalObjects;
     }
 
 
     public void update(float dt) {
+        collectedCount = 0;
         for (WinObject c : winObjects) {
             c.update(dt);
+            if (c.isCollected()) {
+                collectedCount++;
+            }
         }
     }
 
