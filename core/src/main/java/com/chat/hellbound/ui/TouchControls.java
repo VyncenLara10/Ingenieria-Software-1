@@ -10,13 +10,18 @@ public class TouchControls {
     private final ShapeRenderer sr = new ShapeRenderer();
     private final Matrix4 proj = new Matrix4();
 
+    private final float outerA = 0.20f;
+    private final float innerA = 0.45f;
+    private final float shadowOffset = 6f;
+    private final float shadowA = 0.25f;
+
     public void render() {
         if (!InputController.isAndroid()) return;
 
-        float w = Gdx.graphics.getWidth();
-        float h = Gdx.graphics.getHeight();
+        int screenW = Gdx.graphics.getWidth();
+        int screenH = Gdx.graphics.getHeight();
 
-        proj.setToOrtho2D(0, 0, w, h);
+        proj.setToOrtho2D(0, 0, screenW, screenH);
         sr.setProjectionMatrix(proj);
 
         float jx = InputController.getJoyCX();
@@ -33,32 +38,41 @@ public class TouchControls {
 
         sr.begin(ShapeRenderer.ShapeType.Filled);
 
-        sr.setColor(0, 0, 0, 0.25f);
-        sr.circle(jx + 6, jy - 6, jr + 4);
+        sr.setColor(0, 0, 0, shadowA);
+        sr.circle(jx + shadowOffset, jy - shadowOffset, jr + 4f);
 
-        sr.setColor(1, 1, 1, 0.20f);
+        sr.setColor(1f, 1f, 1f, outerA);
         sr.circle(jx, jy, jr);
 
-        sr.setColor(1, 1, 1, 0.45f);
-        sr.circle(jx, jy, jr * 0.45f);
+        float stickX = jx;
+        float stickY = jy;
+        float axisX = InputController.xAxis;
+        float axisY = InputController.yAxis;
+        if (InputController.isJoyActive() && (Math.abs(axisX) > 0.0001f || Math.abs(axisY) > 0.0001f)) {
+            float maxOffset = jr * 0.55f;
+            stickX = jx + axisX * maxOffset;
+            stickY = jy + axisY * maxOffset;
+        }
 
-        sr.setColor(0, 0, 0, 0.25f);
-        sr.circle(ax + 6, ay - 6, ar + 4);
+        sr.setColor(1f, 1f, 1f, innerA);
+        sr.circle(stickX, stickY, jr * 0.45f);
 
-        sr.setColor(1, 0.3f, 0.3f, 0.30f);
+        sr.setColor(0, 0, 0, shadowA);
+        sr.circle(ax + shadowOffset, ay - shadowOffset, ar + 4f);
+
+        sr.setColor(1f, 0.35f, 0.35f, 0.35f);
         sr.circle(ax, ay, ar);
 
-        sr.setColor(1, 0.6f, 0.6f, 0.35f);
+        sr.setColor(1f, 0.6f, 0.6f, 0.40f);
         sr.circle(ax, ay, ar * 0.65f);
 
+        sr.setColor(0, 0, 0, shadowA);
+        sr.circle(ex + shadowOffset, ey - shadowOffset, er + 4f);
 
-        sr.setColor(0, 0, 0, 0.25f);
-        sr.circle(ex + 6, ey - 6, er + 4);
-
-        sr.setColor(0.3f, 0.3f, 1f, 0.30f);
+        sr.setColor(0.35f, 0.35f, 1f, 0.35f);
         sr.circle(ex, ey, er);
 
-        sr.setColor(0.6f, 0.6f, 1f, 0.35f);
+        sr.setColor(0.65f, 0.65f, 1f, 0.40f);
         sr.circle(ex, ey, er * 0.65f);
 
         sr.end();

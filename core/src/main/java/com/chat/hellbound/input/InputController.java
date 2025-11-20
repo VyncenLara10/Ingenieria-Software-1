@@ -10,12 +10,10 @@ public class InputController {
     public static float yAxis = 0f;
 
     private static boolean attackPressedThisFrame = false;
-    private static boolean activeAvility = false; // “E” (habilidad)
+    private static boolean activeAvility = false;
 
     private static float joyCX, joyCY, joyR;
     private static float atkCX, atkCY, atkR;
-
-    // botón habilidad (E)
     private static float abiCX, abiCY, abiR;
 
     private static final float MARGIN = 24f;
@@ -26,11 +24,22 @@ public class InputController {
 
     private static boolean layoutDirty = true;
 
-    // --- NUEVO: “slop” para hacer más fácil acertar al círculo ---
-    private static final float JOY_HIT_SCALE = 1.20f; // 20% más grande para capturar toque
-    private static final float BTN_HIT_SCALE = 1.25f; // botones un poco más permisivos
-    // deadzone pequeña para joystick (no cambia funcionalidad, sólo evita ruido)
+    private static final float JOY_HIT_SCALE = 1.20f;
+    private static final float BTN_HIT_SCALE = 1.25f;
     private static final float JOY_DEADZONE = 0.08f;
+
+    private static int vpX = 0;
+    private static int vpY = 0;
+    private static int vpW = Gdx.graphics.getWidth();
+    private static int vpH = Gdx.graphics.getHeight();
+
+    public static void setViewportBounds(int x, int y, int w, int h) {
+        vpX = x;
+        vpY = y;
+        vpW = Math.max(1, w);
+        vpH = Math.max(1, h);
+        layoutDirty = true;
+    }
 
     public static void update() {
         attackPressedThisFrame = false;
@@ -69,6 +78,7 @@ public class InputController {
     private static void pollTouch() {
         float x = 0f, y = 0f;
 
+        // limpiar punteros si dejaron de tocar
         if (joyPointer != -1 && !Gdx.input.isTouched(joyPointer)) joyPointer = -1;
         if (atkPointer != -1 && !Gdx.input.isTouched(atkPointer)) atkPointer = -1;
         if (abiPointer != -1 && !Gdx.input.isTouched(abiPointer)) abiPointer = -1;
@@ -76,14 +86,16 @@ public class InputController {
         boolean newAttack = false;
         boolean newAbility = false;
 
-        int sh = Gdx.graphics.getHeight();
         int maxP = 20;
 
-        // 1) Asignar punteros nuevos con preferencia por el control más cercano si cae en varios
+        // 1) asignar punteros nuevos; adaptamos coordenadas a VIEWPORT local (pos dentro del viewport)
         for (int p = 0; p < maxP; p++) {
             if (!Gdx.input.isTouched(p)) continue;
-            float sx = Gdx.input.getX(p);
-            float sy = sh - Gdx.input.getY(p);
+            float rawX = Gdx.input.getX(p);
+            float rawY = Gdx.input.getY(p);
+
+            float sx = rawX;
+            float sy = Gdx.graphics.getHeight() - rawY;
 
             boolean joyFree = (joyPointer == -1);
             boolean atkFree = (atkPointer == -1);
@@ -95,7 +107,7 @@ public class InputController {
 
             if (!(inJoy || inAtk || inAbi)) continue;
 
-            // Si toca varios, elegimos el más cercano al centro
+            // si toca varios, elegir el más cercano
             float bestDist2 = Float.MAX_VALUE;
             int best = 0; // 1=joy, 2=atk, 3=abi
 
@@ -123,10 +135,13 @@ public class InputController {
             }
         }
 
-        // 2) Joystick: calcular ejes con deadzone suave (misma funcionalidad, menos ruido)
+        // 2) joystick: calcular ejes con deadzone (usamos raw screen coords -> convertimos a screen-space sy)
         if (joyPointer != -1 && Gdx.input.isTouched(joyPointer)) {
-            float sx = Gdx.input.getX(joyPointer);
-            float sy = sh - Gdx.input.getY(joyPointer);
+            float rawX = Gdx.input.getX(joyPointer);
+            float rawY = Gdx.input.getY(joyPointer);
+            float sx = rawX;
+            float sy = Gdx.graphics.getHeight() - rawY;
+
             float dx = sx - joyCX;
             float dy = sy - joyCY;
             float len = (float) Math.sqrt(dx*dx + dy*dy);
@@ -134,7 +149,6 @@ public class InputController {
                 float m = Math.min(1f, len / joyR);
                 float nx = dx / len;
                 float ny = dy / len;
-                // aplicar deadzone
                 if (m < JOY_DEADZONE) {
                     x = 0f; y = 0f;
                 } else {
@@ -150,7 +164,6 @@ public class InputController {
         attackPressedThisFrame = newAttack;
         activeAvility = newAbility;
 
-        // limpiar punteros sueltos (por si acaso)
         if (atkPointer != -1 && !Gdx.input.isTouched(atkPointer)) atkPointer = -1;
         if (abiPointer != -1 && !Gdx.input.isTouched(abiPointer)) abiPointer = -1;
     }
@@ -168,25 +181,35 @@ public class InputController {
 
     private static void updateLayoutIfNeeded() {
         if (!layoutDirty) return;
-        int sw = Gdx.graphics.getWidth();
-        int sh = Gdx.graphics.getHeight();
 
-        // Joystick (abajo-izquierda)
-        joyR = Math.min(sw, sh) * 0.12f;
-        joyCX = MARGIN + joyR;
-        joyCY = MARGIN + joyR;
+        int sw = vpW;
+        int sh = vpH;
 
-        // Ataque (abajo-derecha)
-        atkR = joyR * 0.9f;
-        atkCX = sw - (MARGIN + atkR);
-        atkCY = MARGIN + atkR;
+        float localJoyR = Math.min(sw, sh) * 0.12f;
+        float localJoyCX = MARGIN + localJoyR;
+        float localJoyCY = MARGIN + localJoyR;
 
-        // Habilidad (E) — encima del ataque
-        abiR  = atkR * 0.85f;
-        abiCX = atkCX;
-        abiCY = atkCY + atkR + MARGIN + abiR;
-        float abiCYMax = sh - (MARGIN + abiR);
-        if (abiCY > abiCYMax) abiCY = abiCYMax;
+        float localAtkR = localJoyR * 0.9f;
+        float localAtkCX = sw - (MARGIN + localAtkR);
+        float localAtkCY = MARGIN + localAtkR;
+
+        float localAbiR  = localAtkR * 0.85f;
+        float localAbiCX = localAtkCX;
+        float localAbiCY = localAtkCY + localAtkR + MARGIN + localAbiR;
+        float abiCYMax = sh - (MARGIN + localAbiR);
+        if (localAbiCY > abiCYMax) localAbiCY = abiCYMax;
+
+        joyR = localJoyR;
+        joyCX = vpX + localJoyCX;
+        joyCY = vpY + localJoyCY;
+
+        atkR = localAtkR;
+        atkCX = vpX + localAtkCX;
+        atkCY = vpY + localAtkCY;
+
+        abiR = localAbiR;
+        abiCX = vpX + localAbiCX;
+        abiCY = vpY + localAbiCY;
 
         layoutDirty = false;
     }
@@ -205,6 +228,10 @@ public class InputController {
     public static float getAbiCX() { return abiCX; }
     public static float getAbiCY() { return abiCY; }
     public static float getAbiR()  { return abiR;  }
+
+    public static boolean isJoyActive() {
+        return joyPointer != -1;
+    }
 
     public static boolean isAndroid() {
         return Gdx.app.getType() == Application.ApplicationType.Android;
