@@ -58,7 +58,7 @@ public class Constants {
         public static final int HIT = 3;
         public static final int DEAD = 4;
 
-        public static final int   ANI_SPEED        = 2;
+        public static final float   ANI_SPEED        = 2f;
         public static final int   MAX_HP           = 20;
         public static final int   DAMAGE           = 1;
         public static final float MOVE_SPEED       = 120f;
@@ -91,7 +91,7 @@ public class Constants {
         public static final int DEAD = 4;
 
         // Estadísticas
-        public static final int   ANI_SPEED        = 1;
+        public static final float   ANI_SPEED        = 20f;
         public static final int   MAX_HP           = 4;     // 4 de vida
         public static final int   DAMAGE           = 2;     // 2 de daño
         public static final float MOVE_SPEED       = 180f;  // Velocidad similar a Crabby
@@ -123,7 +123,7 @@ public class Constants {
         public static final int DEAD = 4;
 
         // Estadísticas del jefe
-        public static final int   ANI_SPEED        = 1;
+        public static final float   ANI_SPEED        = 15f;
         public static final int   MAX_HP           = 10;  // Mucha más vida
         public static final int   DAMAGE           = 3;    // Más daño
         public static final float MOVE_SPEED       = 130f; // Un poco más rápido

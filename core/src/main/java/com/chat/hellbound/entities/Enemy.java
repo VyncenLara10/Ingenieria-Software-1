@@ -16,7 +16,7 @@ public abstract class Enemy extends Entity {
     protected int action = 0;
     protected int aniIndex = 0;
     protected int aniTick = 0;
-    protected int aniSpeed = 6;
+    protected float aniSpeed = 6;
 
     protected boolean facingRight = true;
     protected float vx = 0f, vy = 0f;
