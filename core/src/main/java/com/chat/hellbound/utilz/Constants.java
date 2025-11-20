@@ -58,7 +58,7 @@ public class Constants {
         public static final int HIT = 3;
         public static final int DEAD = 4;
 
-        public static final int   ANI_SPEED        = 6;
+        public static final int   ANI_SPEED        = 2;
         public static final int   MAX_HP           = 20;
         public static final int   DAMAGE           = 1;
         public static final float MOVE_SPEED       = 120f;
@@ -70,10 +70,11 @@ public class Constants {
 
         public static final float FACE_EPS = 6f;
     }
+
     public static class HellGuardianConstants {
         // Hell Guardian - Demonio rojo que aparece al recolectar 2 objetos
-        public static final int FRAME_W = 1775;  // Ancho de cada frame en el sprite
-        public static final int FRAME_H = 1265;  // Alto de cada frame en el sprite
+        public static final int FRAME_W = 1728;  // Ancho de cada frame en el sprite
+        public static final int FRAME_H = 1160;  // Alto de cada frame en el sprite
 
         // Animaciones del sprite rojo
         public static final int IDLE_ROW   = 0; public static final int IDLE_COUNT   = 3;  // Fila 0, 3 frames
@@ -90,14 +91,14 @@ public class Constants {
         public static final int DEAD = 4;
 
         // Estadísticas
-        public static final int   ANI_SPEED        = 6;
+        public static final int   ANI_SPEED        = 1;
         public static final int   MAX_HP           = 4;     // 4 de vida
         public static final int   DAMAGE           = 2;     // 2 de daño
-        public static final float MOVE_SPEED       = 140f;  // Velocidad similar a Crabby
+        public static final float MOVE_SPEED       = 180f;  // Velocidad similar a Crabby
         public static final float AGGRO_RANGE      = 300f;  // Rango de detección
         public static final float ATTACK_RANGE     = 90f;   // Rango de ataque más grande (para golpear desde más lejos)
-        public static final float ATTACK_COOLDOWN  = 1.0f;  // Cooldown entre ataques
-        public static final float ATTACK_LOCK_TIME = 0.45f; // Tiempo que dura la animación de ataque
+        public static final float ATTACK_COOLDOWN  = 2f;  // Cooldown entre ataques
+        public static final float ATTACK_LOCK_TIME = 1f; // Tiempo que dura la animación de ataque
         public static final float KNOCKBACK        = 120f;  // Retroceso al ser golpeado
 
         public static final float FACE_EPS = 6f;
@@ -122,10 +123,10 @@ public class Constants {
         public static final int DEAD = 4;
 
         // Estadísticas del jefe
-        public static final int   ANI_SPEED        = 6;
+        public static final int   ANI_SPEED        = 1;
         public static final int   MAX_HP           = 10;  // Mucha más vida
         public static final int   DAMAGE           = 3;    // Más daño
-        public static final float MOVE_SPEED       = 10f; // Un poco más rápido
+        public static final float MOVE_SPEED       = 130f; // Un poco más rápido
         public static final float AGGRO_RANGE      = 400f; // Rango de agro más grande
         public static final float ATTACK_RANGE     = 80f;  // Rango de ataque más grande
         public static final float ATTACK_COOLDOWN  = 0.6f; // Ataca más seguido

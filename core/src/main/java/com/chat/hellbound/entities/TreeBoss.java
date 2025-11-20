@@ -7,74 +7,82 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.chat.hellbound.levels.LevelManager;
 import com.chat.hellbound.utilz.Assets;
+import com.chat.hellbound.utilz.HelpMethods;
 import com.chat.hellbound.utilz.TextureUtils;
 
 import static com.chat.hellbound.utilz.Constants.TreeBossConstants.*;
 
 /**
- * TreeBoss - Version ULTRA SIMPLE sin HelpMethods complicados
+ * TreeBoss - Jefe final que aparece al recolectar los 3 objetos
+ * Ahora extiende de Enemy para usar el sistema de combate correcto
  */
-public class TreeBoss extends Boss {
+public class TreeBoss extends Enemy {
 
     private final LevelManager levelManager;
+    private final int[][] lvlData;
+    private final int tileW, tileH;
 
     private TextureRegion[][] frames;
 
-    private float attackCooldownTimer = ATTACK_COOLDOWN;
+    private float attackCooldown = 0f;
     private float attackLock = 0f;
     private float hitLock = 0f;
+    private float attackTimer = 0f;
+    private boolean attackHitProcessed = false;
 
-    private float scale = BOSS_SCALE;
+    public int level;
+
+    private float scale = 10f;
 
     private final Rectangle attackBox = new Rectangle();
 
-    // Estados
-    private int action = IDLE;
-    private int aniIndex = 0;
-    private float aniTick = 0;
-    private boolean facingRight = true;
-    private boolean dead = false;
-
     private static final boolean SPRITE_FACES_RIGHT = false;
     private static final float HIT_LOCK_TIME = 0.25f;
+    // Momento en el que inicia la ventana de daño durante la animación (0.0 a 1.0)
+    // El ataque hará daño desde este momento hasta +0.3 segundos
+    private static final float ATTACK_HIT_TIMING = 0.5f;
 
-    public TreeBoss(float x, float y, LevelManager lm) {
-        super(x, y, (int)(FRAME_W * BOSS_SCALE), (int)(FRAME_H * BOSS_SCALE), MAX_HP);
-
+    public TreeBoss(float x, float y, LevelManager lm, int level) {
         this.levelManager = lm;
+        this.lvlData = lm.getLevelData();
+        this.tileW = lm.getTileWidth();
+        this.tileH = lm.getTileHeight();
+        this.level = level;
 
         Texture atlas = Assets.getTreeBossAtlas();
         TextureUtils.prepareTexture(atlas);
         frames = TextureRegion.split(atlas, FRAME_W, FRAME_H);
         TextureUtils.fixBleeding(frames);
 
-        this.maxHealth = MAX_HP;
-        this.currentHealth = maxHealth;
+        this.maxHp = MAX_HP;
+        this.hp = maxHp;
+        this.aniSpeed = ANI_SPEED;
+
+        initHitbox(x, y, FRAME_W * scale, FRAME_H * scale);
     }
 
     @Override
-    public void update(float delta, Player player) {
-        if (!isActive) return;
-
-        if (dead || isDefeated) {
+    public void update(float dt) {
+        // Si está muerto, solo animar la muerte
+        if (dead) {
             action = DEAD;
-            updateDeath(delta);
+            updateDeath(dt, DEAD_COUNT);
             return;
         }
 
-        // Actualizar timers
-        attackCooldownTimer = Math.max(0f, attackCooldownTimer - delta);
-        attackLock = Math.max(0f, attackLock - delta);
-        hitLock = Math.max(0f, hitLock - delta);
-        updateFlash(delta);
+        // Actualizar temporizadores
+        attackCooldown = Math.max(0f, attackCooldown - dt);
+        attackLock = Math.max(0f, attackLock - dt);
+        hitLock = Math.max(0f, hitLock - dt);
 
+        // Si está en estado HIT, solo animar el golpe recibido
         if (hitLock > 0f) {
             action = HIT;
-            updateAnimation(delta, HIT_COUNT);
+            updateAnimation(HIT_COUNT);
             return;
         }
 
-        // Calcular dirección al jugador
+        // Obtener posición del jugador
         Vector2 playerPos = EnemyShared.playerCenter();
         float cx = hitbox.x + hitbox.width * 0.5f;
         float cy = hitbox.y + hitbox.height * 0.5f;
@@ -84,78 +92,141 @@ public class TreeBoss extends Boss {
 
         float desiredVx = 0f, desiredVy = 0f;
 
-        // Comportamiento de persecución
+        // Si está en rango de agro
         if (dist2 < AGGRO_RANGE * AGGRO_RANGE) {
+            // Actualizar dirección
             if (Math.abs(dx) > FACE_EPS) facingRight = dx > 0;
+
             float len = (float)Math.sqrt(dist2);
-            if (len > 1e-5f) {
-                float nx = dx / len;
-                float ny = dy / len;
 
-                // Velocidad aumentada por fase
-                float speedMultiplier = 1.0f;
-                if (currentPhase == 2) speedMultiplier = 1.3f;
-                if (currentPhase == 3) speedMultiplier = 1.6f;
-
-                desiredVx = nx * MOVE_SPEED * speedMultiplier;
-                desiredVy = ny * MOVE_SPEED * speedMultiplier;
-            }
-            if (len < ATTACK_RANGE && attackCooldownTimer == 0f && attackLock == 0f) {
-                doAttack();
-                attackCooldownTimer = ATTACK_COOLDOWN * (currentPhase == 3 ? 0.7f : 1.0f);
-                attackLock = ATTACK_LOCK_TIME;
+            // Si está en rango de ataque y puede atacar
+            if (len < ATTACK_RANGE && attackCooldown <= 0f && attackLock <= 0f) {
+                startAttack();
+            } else if (attackLock <= 0f) {
+                // Moverse hacia el jugador si no está atacando
+                if (len > 1e-5f) {
+                    float nx = dx / len;
+                    float ny = dy / len;
+                    desiredVx = nx * MOVE_SPEED;
+                    desiredVy = ny * MOVE_SPEED;
+                }
             }
         }
 
+        // Manejar estado de ataque
         if (attackLock > 0f) {
             action = ATTACK;
+            attackTimer += dt;
+
+            // Activar la ventana de daño en el momento correcto de la animación
+            float attackProgress = 1f - (attackLock / ATTACK_LOCK_TIME);
+
+            // Encolar el ataque CADA FRAME durante la ventana de daño
+            if (attackProgress >= ATTACK_HIT_TIMING && attackProgress <= ATTACK_HIT_TIMING + 0.3f) {
+                if (!attackHitProcessed) {
+                    attackHitProcessed = true;
+                }
+                updateAttackBox();
+                EnemyShared.queueEnemyAttack(this, attackBox, DAMAGE);
+            }
+
             desiredVx = 0f;
             desiredVy = 0f;
+            updateAnimation(ATTACK_COUNT);
         } else {
+            // Determinar acción basada en movimiento
             action = (Math.abs(desiredVx) > 0.01f || Math.abs(desiredVy) > 0.01f) ? RUN : IDLE;
+            updateAnimation(getActionFrameCount());
         }
 
-        // MOVIMIENTO SIMPLE - sin colisiones complicadas
-        hitbox.x += desiredVx * delta;
-        hitbox.y += desiredVy * delta;
+        // Aplicar movimiento con colisión
+        if (attackLock <= 0f) { // Solo moverse si no está atacando
+            float newX = hitbox.x + desiredVx * dt;
+            if (HelpMethods.CanMoveHere(newX, hitbox.y, hitbox.width, hitbox.height, lvlData, tileW, tileH, level)) {
+                hitbox.x = newX;
+            } else {
+                hitbox.x = HelpMethods.GetEntityXPosNextToWall(hitbox, desiredVx * dt, lvlData, tileW, tileH, level);
+            }
 
-        updateAnimation(delta, getActionFrameCount());
+            float newY = hitbox.y + desiredVy * dt;
+            if (HelpMethods.CanMoveHere(hitbox.x, newY, hitbox.width, hitbox.height, lvlData, tileW, tileH, level)) {
+                hitbox.y = newY;
+            } else {
+                hitbox.y = HelpMethods.GetEntityYPosUnderRoofOrAboveFloor(hitbox, desiredVy * dt, lvlData, tileW, tileH, level);
+            }
+        }
     }
 
-    private void doAttack() {
+    private void startAttack() {
         action = ATTACK;
         aniIndex = 0;
         aniTick = 0;
-        float w = (FRAME_W * scale) * 0.7f;
-        float h = (FRAME_H * scale) * 0.6f;
-        float ax = facingRight ? (hitbox.x + hitbox.width) : (hitbox.x - w);
-        float ay = hitbox.y + hitbox.height * 0.25f;
+        attackTimer = 0f;
+        attackLock = ATTACK_LOCK_TIME;
+        attackCooldown = ATTACK_COOLDOWN;
+        attackHitProcessed = false;
+
+        // Configurar attackBox
+        updateAttackBox();
+    }
+
+    private void updateAttackBox() {
+        // AttackBox del boss - más grande porque es un jefe
+        float w = (FRAME_W * scale) * 0.9f;  // Boss tiene attackBox más grande
+        float h = (FRAME_H * scale) * 0.8f;
+        float ax = facingRight ? (hitbox.x + hitbox.width * 0.5f) : (hitbox.x - w + hitbox.width * 0.5f);
+        float ay = hitbox.y + hitbox.height * 0.2f;
         attackBox.set(ax, ay, w, h);
-        EnemyShared.queueEnemyAttack(this, attackBox, DAMAGE);
     }
 
     @Override
     public void render(SpriteBatch batch) {
-        if (!isActive) return;
-
         TextureRegion f = currentFrame();
         float w = FRAME_W * scale;
         float h = FRAME_H * scale;
         boolean wantRight = facingRight;
         float scaleX = (SPRITE_FACES_RIGHT ? (wantRight ? 1f : -1f) : (wantRight ? -1f : 1f));
 
-        if (isFlashing) {
-            batch.setColor(1f, 0.3f, 0.3f, 1f);
+        // Aplicar fade out durante la muerte
+        float alpha = 1f;
+        if (dying && deathTimer > 0f) {
+            // Fade out gradual durante la muerte
+            alpha = Math.min(1f, deathTimer / deathDuration);
+        } else if (hitLock > 0f) {
+            // Pequeño flash cuando recibe daño
+            float hitProgress = hitLock / HIT_LOCK_TIME;
+            if (hitProgress > 0.7f) { // Flash en los primeros frames
+                alpha = 0.7f + (hitProgress - 0.7f);
+            }
         }
+
+        // Guardar color anterior y aplicar alpha
+        float oldAlpha = batch.getColor().a;
+        batch.setColor(1f, 1f, 1f, alpha);
 
         batch.draw(f, hitbox.x, hitbox.y, w * 0.5f, 0f, w, h, scaleX, 1f, 0f);
 
-        if (isFlashing) {
-            batch.setColor(1f, 1f, 1f, 1f);
+        // Restaurar color original
+        batch.setColor(1f, 1f, 1f, oldAlpha);
+
+        // DEBUG: Descomentar para visualizar hitboxes
+        /*
+        batch.end();
+        ShapeRenderer sr = new ShapeRenderer();
+        sr.begin(ShapeRenderer.ShapeType.Line);
+        sr.setColor(Color.RED);
+        sr.rect(hitbox.x, hitbox.y, hitbox.width, hitbox.height);
+        if (attackLock > 0f) {
+            sr.setColor(Color.YELLOW);
+            sr.rect(attackBox.x, attackBox.y, attackBox.width, attackBox.height);
         }
+        sr.end();
+        batch.begin();
+        */
     }
 
-    private TextureRegion currentFrame() {
+    @Override
+    public TextureRegion currentFrame() {
         int row, count;
         switch (action) {
             case RUN:    row = RUN_ROW;    count = RUN_COUNT;    break;
@@ -182,78 +253,65 @@ public class TreeBoss extends Boss {
         }
     }
 
-    private void updateAnimation(float delta, int frameCount) {
-        aniTick += delta * ANI_SPEED * 60f;
-        if (aniTick >= 1f) {
-            aniTick = 0;
-            aniIndex++;
-            if (aniIndex >= frameCount) {
-                aniIndex = 0;
-            }
-        }
-    }
-
-    private void updateDeath(float delta) {
-        aniTick += delta * ANI_SPEED * 60f;
-        if (aniTick >= 1f) {
-            aniTick = 0;
-            if (aniIndex < DEAD_COUNT - 1) {
-                aniIndex++;
-            }
-        }
-    }
-
     @Override
-    public void takeDamage(int damage) {
-        if (isDefeated || dead) return;
+    protected void onHit() {
+        if (dead) return; // No procesar hits si ya está muerto
 
-        currentHealth -= damage;
-        isFlashing = true;
-        flashTimer = 0.2f;
-
-        // Knockback
+        // Knockback en dirección opuesta a donde mira
+        float knockbackDistance = KNOCKBACK * 0.15f;
         float dir = facingRight ? -1f : 1f;
-        hitbox.x += dir * KNOCKBACK * 0.1f;
 
+        // Aplicar knockback con verificación de colisión
+        float newX = hitbox.x + dir * knockbackDistance;
+        if (HelpMethods.CanMoveHere(newX, hitbox.y, hitbox.width, hitbox.height, lvlData, tileW, tileH, level)) {
+            hitbox.x = newX;
+        }
+
+        // Cambiar a estado HIT
         action = HIT;
         aniIndex = 0;
         aniTick = 0;
         hitLock = HIT_LOCK_TIME;
 
-        if (currentHealth <= 0) {
-            currentHealth = 0;
-            isDefeated = true;
-            dead = true;
-            onDefeat();
-        } else {
-            updatePhase();
+        // Cancelar ataque actual si estaba atacando
+        if (attackLock > 0f) {
+            attackLock = 0f;
+            attackHitProcessed = true;
         }
     }
 
     @Override
-    protected void onDefeat() {
-        dead = true;
-        action = DEAD;
-        aniIndex = 0;
-        aniTick = 0;
-        System.out.println("¡Tree Boss derrotado!");
+    protected void startDeath() {
+        super.startDeath(); // Llama al método de la clase base
+
+        // Cancelar cualquier ataque en progreso
+        attackLock = 0f;
+        attackHitProcessed = true;
+        hitLock = 0f;
+
+        // Configurar duración de la animación de muerte (más larga para el boss)
+        deathDuration = 1.5f; // 1.5 segundos para la animación de muerte del boss
     }
 
-    @Override
-    public void selectAttackPattern() {
-        // Simple
+    public void setScale(float scale) {
+        float cx = hitbox.x + hitbox.width * 0.5f;
+        float cy = hitbox.y + hitbox.height * 0.5f;
+        this.scale = scale;
+        hitbox.setSize(FRAME_W * scale, FRAME_H * scale);
+        hitbox.setCenter(cx, cy);
     }
 
-    @Override
-    public void executeAttack(Player player) {
-        // Se ejecuta en doAttack()
+    // Método para debugging
+    public Rectangle getAttackBox() {
+        return attackBox;
     }
 
-    public boolean isDead() {
-        return dead;
+    public boolean isAttacking() {
+        return attackLock > 0f;
     }
 
-    public int getAction() {
-        return action;
+    // Método útil para saber cuánta vida le queda al boss
+    public float getHealthPercentage() {
+        return (float) hp / (float) maxHp;
     }
 }

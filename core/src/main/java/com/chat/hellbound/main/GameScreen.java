@@ -43,12 +43,14 @@ public class GameScreen implements Screen {
 
     private LevelManager levelManager;
     private EnemyManager enemyManager;
-    private BossManager bossManager;
     private InteractiveObject interactiveObject;
     private CameraController camController;
     private TouchControls touchControls;
     private Player player;
     private Player remotePlayer;
+
+    private boolean hellGuardianSpawned = false;
+    private boolean treeBossSpawned = false;
 
     private final ShapeRenderer debugSR = new ShapeRenderer();
     private final ShapeRenderer uiSR = new ShapeRenderer();
@@ -94,7 +96,6 @@ public class GameScreen implements Screen {
 
         levelManager = new LevelManager(atlas,level);
         enemyManager = new EnemyManager(levelManager,level);
-        bossManager = new BossManager();
         interactiveObject = new InteractiveObject(levelManager, level);
 
         this.player = new Player(700, 5800, levelManager,level);
@@ -171,42 +172,47 @@ public class GameScreen implements Screen {
             }
 
             enemyManager.update(dt, player);
-            bossManager.update(dt, player);
             interactiveObject.update(dt);
 
-            if (!bossManager.isBossEncounterActive() && interactiveObject.getCollectedCount() == 2) {
+            // Indicador si el boss está activoç
+            // Spawn Hell Guardian cuando el jugador recoge 2 objetos
+            if (!hellGuardianSpawned && interactiveObject.getCollectedCount() == 0) {
+
                 float playerX = player.getHitbox().x;
                 float playerY = player.getHitbox().y;
 
                 float bossX = playerX + 200f;
                 float bossY = playerY;
 
-                HellGuardian hellGuardian = new HellGuardian(bossX, bossY, levelManager);
-                bossManager.addBoss(hellGuardian);
-                bossManager.triggerBossEncounter(0);
+                HellGuardian hellGuardian = new HellGuardian(bossX, bossY, levelManager, level);
+                enemyManager.addEnemy(hellGuardian);
 
+                hellGuardianSpawned = true;
                 System.out.println("¡Hell Guardian ha aparecido! (2/3 objetos)");
             }
 
-            if (!bossManager.isBossEncounterActive() && interactiveObject.allCollected()) {
+// Spawn TreeBoss cuando el jugador recoge TODO
+            if (!treeBossSpawned && interactiveObject.allCollected()) {
+
                 float playerX = player.getHitbox().x;
                 float playerY = player.getHitbox().y;
 
                 float bossX = playerX + 200f;
                 float bossY = playerY;
 
-                TreeBoss treeBoss = new TreeBoss(bossX, bossY, levelManager);
-                bossManager.addBoss(treeBoss);
-                bossManager.triggerBossEncounter(0);
+                TreeBoss treeBoss = new TreeBoss(bossX, bossY, levelManager, level);
+                enemyManager.addEnemy(treeBoss);
 
+                treeBossSpawned = true;
                 System.out.println("¡Tree Boss ha aparecido! (3/3 objetos)");
             }
+
 
             if(player.isDead()){
                 game.setScreen(new DeathScreen(game));
             }
-            boolean bossDefeated = bossManager.getActiveBoss() == null || bossManager.getActiveBoss().isDefeated();
-            if (interactiveObject.allCollected() && bossDefeated){
+
+            if (interactiveObject.allCollected()){
                 game.setScreen(new WinScreen(game));
             }
             camController.update(dt);
@@ -241,7 +247,6 @@ public class GameScreen implements Screen {
         batch.begin();
         levelManager.draw(batch, 0f);
         enemyManager.render(batch);
-        bossManager.render(batch);
         interactiveObject.render(batch);
         player.render(batch);
         if (remoteActive && remotePlayer != null && multiplayerMode != MultiplayerMode.OFFLINE) {
@@ -287,15 +292,6 @@ public class GameScreen implements Screen {
         float objY = sh - 20f;
         font.setColor(Color.WHITE);
         font.draw(batch, layout, objX, objY);
-
-        if (bossManager.isBossEncounterActive() && bossManager.getActiveBoss() != null) {
-            String bossText = "¡BOSS!";
-            layout.setText(font, bossText);
-            float bossX = (sw - layout.width) / 2f;
-            float bossY = sh - 20f;
-            font.setColor(Color.RED);
-            font.draw(batch, layout, bossX, bossY);
-        }
 
         batch.end();
 
