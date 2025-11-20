@@ -176,7 +176,7 @@ public class GameScreen implements Screen {
 
             // Indicador si el boss está activoç
             // Spawn Hell Guardian cuando el jugador recoge 2 objetos
-            if (!hellGuardianSpawned && interactiveObject.getCollectedCount() == 0) {
+            if (!hellGuardianSpawned && interactiveObject.getCollectedCount() == 2) {
 
                 float playerX = player.getHitbox().x;
                 float playerY = player.getHitbox().y;
