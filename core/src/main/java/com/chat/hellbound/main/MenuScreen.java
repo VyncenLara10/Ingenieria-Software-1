@@ -2,6 +2,8 @@ package com.chat.hellbound.main;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.Application;
+import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -26,67 +28,136 @@ public class MenuScreen implements Screen {
     private ShapeRenderer sr;
     private BitmapFont font;
     private GlyphLayout layout;
-    private final Vector3 touch = new Vector3();
 
-    // Estado: ¿mostrando selección de nivel?
-    private boolean showLevelSelect = false;
+    private Color bgTop = new Color(0.06f, 0.06f, 0.10f, 1f);
+    private Color bgBottom = new Color(0.02f, 0.02f, 0.05f, 1f);
+    private Color titleColor = new Color(0.9f, 0.9f, 0.95f, 1f);
+    private Color btnColor = new Color(0.18f, 0.18f, 0.22f, 1f);
+    private Color btnHoverColor = new Color(0.30f, 0.30f, 0.40f, 1f);
+    private Color btnTextColor = new Color(0.95f, 0.95f, 0.98f, 1f);
+    private Color nameBoxColor = new Color(0.12f, 0.12f, 0.16f, 1f);
+    private Color nameBoxActiveColor = new Color(0.20f, 0.20f, 0.30f, 1f);
 
-    // Botones del menú principal (sin "Opciones")
-    private Rectangle btnPlay;
-    private Rectangle btnMultiplayer;
-    private Rectangle btnExit;
+    private Rectangle btnPlay = new Rectangle();
+    private Rectangle btnHost = new Rectangle();
+    private Rectangle btnJoin = new Rectangle();
+    private Rectangle btnExit = new Rectangle();
+    private Rectangle nameRect = new Rectangle();
 
-    // Botones de selección de nivel
-    private Rectangle btnBosque;
-    private Rectangle btnTeatro;
-    private Rectangle btnAtras;
+    private Vector3 touchVec = new Vector3();
 
-    // Colores de estilo
-    private final Color bgTop = new Color(0.07f, 0.07f, 0.09f, 1f);
-    private final Color bgBottom = new Color(0.10f, 0.10f, 0.14f, 1f);
-    private final Color btnBorder = new Color(0.95f, 0.15f, 0.15f, 1f); // rojo
-    private final Color btnFill = new Color(0.14f, 0.14f, 0.18f, 1f);
-    private final Color btnFillHover = new Color(0.18f, 0.18f, 0.23f, 1f);
-    private final Color titleColor = new Color(0.95f, 0.95f, 0.98f, 1f);
-    private final Color textColor = new Color(0.92f, 0.92f, 0.95f, 1f);
+    private String playerName = "Jugador";
+    private boolean nameActive = false;
 
     public MenuScreen(Main game) {
         this.game = game;
-    }
 
-    @Override
-    public void show() {
         cam = new OrthographicCamera();
+        cam.setToOrtho(false, Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT);
         viewport = new FitViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT, cam);
-        viewport.apply(true);
-        cam.position.set(Constants.WORLD_WIDTH / 2f, Constants.WORLD_HEIGHT / 2f, 0);
-        cam.update();
+        viewport.apply();
 
         batch = new SpriteBatch();
         sr = new ShapeRenderer();
-        font = new BitmapFont(); // usa default; reemplaza por tu propia fuente si la tienes
+        font = new BitmapFont();
         layout = new GlyphLayout();
 
-        // Layout de botones del menú principal
-        float bw = 380f;
-        float bh = 80f;
-        float gap = 22f;
-        float startY = Constants.WORLD_HEIGHT * 0.55f;
+        computeLayout();
+        setupInput();
+    }
 
-        btnPlay        = new Rectangle((Constants.WORLD_WIDTH - bw)/2f, startY, bw, bh);
-        btnMultiplayer = new Rectangle((Constants.WORLD_WIDTH - bw)/2f, startY - (bh+gap)*1, bw, bh);
-        // btnOptions eliminado
-        btnExit        = new Rectangle((Constants.WORLD_WIDTH - bw)/2f, startY - (bh+gap)*2, bw, bh);
+    private void setupInput() {
+        Gdx.input.setInputProcessor(new InputAdapter() {
+            @Override
+            public boolean keyTyped(char character) {
+                if (!nameActive) return false;
+                if (character == '\b') {
+                    if (playerName.length() > 0) {
+                        playerName = playerName.substring(0, playerName.length() - 1);
+                    }
+                    return true;
+                }
+                if (character == '\r' || character == '\n') {
+                    nameActive = false;
+                    return true;
+                }
+                if (playerName.length() >= 16) return false;
+                if (character >= 32 && character <= 126) {
+                    playerName += character;
+                    return true;
+                }
+                return false;
+            }
+        });
+    }
 
-        // Layout de botones de selección de nivel
-        float selWidth = 360f;
-        float selHeight = 90f;
-        float selGap = 26f;
-        float selStartY = Constants.WORLD_HEIGHT * 0.55f;
+    private void computeLayout() {
+        float w = Constants.WORLD_WIDTH;
+        float h = Constants.WORLD_HEIGHT;
 
-        btnBosque = new Rectangle((Constants.WORLD_WIDTH - selWidth)/2f, selStartY, selWidth, selHeight);
-        btnTeatro = new Rectangle((Constants.WORLD_WIDTH - selWidth)/2f, selStartY - (selHeight + selGap), selWidth, selHeight);
-        btnAtras  = new Rectangle((Constants.WORLD_WIDTH - 220f)/2f, Constants.WORLD_HEIGHT * 0.20f, 220f, 70f);
+        float nameWidth = w * 0.5f;
+        float nameHeight = 60f;
+        float nameX = (w - nameWidth) / 2f;
+        float nameY = h * 0.62f;
+        nameRect.set(nameX, nameY, nameWidth, nameHeight);
+
+        float btnWidth = w * 0.45f;
+        float btnHeight = 75f;
+        float spacing = 25f;
+
+        float totalHeight = btnHeight * 4f + spacing * 3f;
+        float startY = h / 2f - totalHeight / 2f - 60f;
+
+        float x = (w - btnWidth) / 2f;
+
+        btnPlay.set(x, startY + (btnHeight + spacing) * 3, btnWidth, btnHeight);
+        btnHost.set(x, startY + (btnHeight + spacing) * 2, btnWidth, btnHeight);
+        btnJoin.set(x, startY + (btnHeight + spacing) * 1, btnWidth, btnHeight);
+        btnExit.set(x, startY, btnWidth, btnHeight);
+    }
+
+    private void handleInput() {
+        if (Gdx.input.justTouched()) {
+            touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+            viewport.unproject(touchVec);
+            float tx = touchVec.x;
+            float ty = touchVec.y;
+
+            if (nameRect.contains(tx, ty)) {
+                nameActive = true;
+                if (Gdx.app.getType() == Application.ApplicationType.Android) {
+                    Gdx.input.setOnscreenKeyboardVisible(true);
+                }
+                return;
+            } else {
+                nameActive = false;
+            }
+
+            if (btnPlay.contains(tx, ty)) {
+                game.setScreen(new GameScreen(game, 1));
+                return;
+            }
+            if (btnHost.contains(tx, ty)) {
+                String name = playerName.trim().isEmpty() ? "Host" : playerName.trim();
+                game.setScreen(new LobbyScreen(game, true,name));
+                return;
+            }
+            if (btnJoin.contains(tx, ty)) {
+                String name = playerName.trim().isEmpty() ? "Client" : playerName.trim();
+                game.setScreen(new LobbyScreen(game, false,name));
+                return;
+            }
+            if (btnExit.contains(tx, ty)) {
+                Gdx.app.exit();
+            }
+        }
+    }
+
+    private boolean isHovered(Rectangle r) {
+        if (!Gdx.input.isTouched()) return false;
+        touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+        viewport.unproject(touchVec);
+        return r.contains(touchVec.x, touchVec.y);
     }
 
     @Override
@@ -96,132 +167,97 @@ public class MenuScreen implements Screen {
         Gdx.gl.glClearColor(bgTop.r, bgTop.g, bgTop.b, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Fondo con “vignette” simple (dos capas rectangulares)
         sr.setProjectionMatrix(cam.combined);
         sr.begin(ShapeRenderer.ShapeType.Filled);
-        // base
         sr.setColor(bgBottom);
         sr.rect(0, 0, Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT);
-        // banda superior ligeramente más oscura
         sr.setColor(bgTop);
-        sr.rect(0, Constants.WORLD_HEIGHT * 0.75f, Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT * 0.25f);
-        // banda inferior
-        sr.setColor(new Color(bgTop.r, bgTop.g, bgTop.b, 1f));
-        sr.rect(0, 0, Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT * 0.12f);
+        sr.rect(0, Constants.WORLD_HEIGHT / 3f, Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT * 2f / 3f);
+
+        Color playColor = isHovered(btnPlay) ? btnHoverColor : btnColor;
+        Color hostColor = isHovered(btnHost) ? btnHoverColor : btnColor;
+        Color joinColor = isHovered(btnJoin) ? btnHoverColor : btnColor;
+        Color exitColor = isHovered(btnExit) ? btnHoverColor : btnColor;
+
+        sr.setColor(playColor);
+        sr.rect(btnPlay.x, btnPlay.y, btnPlay.width, btnPlay.height);
+        sr.setColor(hostColor);
+        sr.rect(btnHost.x, btnHost.y, btnHost.width, btnHost.height);
+        sr.setColor(joinColor);
+        sr.rect(btnJoin.x, btnJoin.y, btnJoin.width, btnJoin.height);
+        sr.setColor(exitColor);
+        sr.rect(btnExit.x, btnExit.y, btnExit.width, btnExit.height);
+
+        sr.setColor(nameActive ? nameBoxActiveColor : nameBoxColor);
+        sr.rect(nameRect.x, nameRect.y, nameRect.width, nameRect.height);
         sr.end();
 
-        // Título
         batch.setProjectionMatrix(cam.combined);
         batch.begin();
-        String title = showLevelSelect ? "Selecciona un nivel" : "Hellbound";
+
         font.setColor(titleColor);
-        layout.setText(font, title);
-        font.draw(batch, title, (Constants.WORLD_WIDTH - layout.width)/2f, Constants.WORLD_HEIGHT * 0.82f);
-        batch.end();
+        font.getData().setScale(2.0f);
+        String title = "HELLBOUND";
+        layout.setText(font, title, titleColor, 0, Align.left, false);
+        float titleX = (Constants.WORLD_WIDTH - layout.width) / 2f;
+        float titleY = Constants.WORLD_HEIGHT * 0.85f;
+        font.draw(batch, layout, titleX, titleY);
 
-        // Dibujo de botones según estado
-        if (!showLevelSelect) {
-            drawButton(btnPlay, "Jugar");
-            drawButton(btnMultiplayer, "Multiplayer");
-            drawButton(btnExit, "Salir");
-        } else {
-            drawButton(btnBosque, "Bosque");
-            drawButton(btnTeatro, "Teatro");
-            drawButton(btnAtras, "Atrás");
-        }
-    }
+        font.setColor(btnTextColor);
+        font.getData().setScale(1.2f);
+        String label = "Nombre:";
+        layout.setText(font, label);
+        float labelX = nameRect.x;
+        float labelY = nameRect.y + nameRect.height + 30f;
+        font.draw(batch, layout, labelX, labelY);
 
-    private void drawButton(Rectangle r, String text) {
-        Vector3 mp = getMouseWorld();
-        boolean hovered = r.contains(mp.x, mp.y);
+        String shownName = playerName.isEmpty() ? "" : playerName;
+        layout.setText(font, shownName);
+        float nameTextX = nameRect.x + 16f;
+        float nameTextY = nameRect.y + nameRect.height / 2f + layout.height / 2f;
+        font.draw(batch, layout, nameTextX, nameTextY);
 
-        // Sombra
-        sr.begin(ShapeRenderer.ShapeType.Filled);
-        sr.setColor(0, 0, 0, hovered ? 0.35f : 0.25f);
-        drawRoundedRect(r.x + 4f, r.y - 4f, r.width, r.height, 16f);
-        sr.end();
+        font.setColor(btnTextColor);
+        font.getData().setScale(1.4f);
+        drawCenteredText("Jugar", btnPlay);
+        drawCenteredText("Host Online", btnHost);
+        drawCenteredText("Join Online", btnJoin);
+        drawCenteredText("Salir", btnExit);
 
-        // Borde (rojo) + relleno (hover cambia)
-        sr.begin(ShapeRenderer.ShapeType.Filled);
-        // borde
-        sr.setColor(btnBorder);
-        drawRoundedRect(r.x, r.y, r.width, r.height, 16f);
-        // relleno interior (encoger para “grosor” de borde)
-        float pad = 3.5f;
-        sr.setColor(hovered ? btnFillHover : btnFill);
-        drawRoundedRect(r.x + pad, r.y + pad, r.width - pad*2f, r.height - pad*2f, 13f);
-        sr.end();
-
-        // Texto centrado
-        batch.begin();
-        font.setColor(textColor);
-        layout.setText(font, text);
-        float tx = r.x + (r.width - layout.width)/2f;
-        float ty = r.y + (r.height + layout.height)/2f;
-        font.draw(batch, text, tx, ty, 0, Align.left, false);
         batch.end();
     }
 
-    // Dibuja un rectángulo con esquinas redondeadas usando ShapeRenderer (Filled)
-    private void drawRoundedRect(float x, float y, float w, float h, float radius) {
-        float r = Math.min(radius, Math.min(w, h) / 2f);
-
-        // centro
-        sr.rect(x + r, y, w - 2*r, h);
-        sr.rect(x, y + r, w, h - 2*r);
-
-        // esquinas (cuartos de círculo)
-        sr.circle(x + r, y + r, r, 16);                 // inferior izquierda
-        sr.circle(x + w - r, y + r, r, 16);             // inferior derecha
-        sr.circle(x + r, y + h - r, r, 16);             // superior izquierda
-        sr.circle(x + w - r, y + h - r, r, 16);         // superior derecha
+    private void drawCenteredText(String text, Rectangle rect) {
+        layout.setText(font, text, btnTextColor, 0, Align.left, false);
+        float x = rect.x + (rect.width - layout.width) / 2f;
+        float y = rect.y + rect.height / 2f + layout.height / 2f;
+        font.draw(batch, layout, x, y);
     }
 
-    private Vector3 getMouseWorld() {
-        touch.set(Gdx.input.getX(), Gdx.input.getY(), 0f);
-        viewport.unproject(touch);
-        return touch;
+    @Override
+    public void resize(int width, int height) {
+        viewport.update(width, height, true);
+        computeLayout();
     }
 
-    private void handleInput() {
-        if (!Gdx.input.justTouched()) return;
-        Vector3 wp = getMouseWorld();
-        float x = wp.x, y = wp.y;
-
-        if (!showLevelSelect) {
-            if (btnPlay.contains(x, y)) {
-                showLevelSelect = true;
-                return;
-            }
-            if (btnMultiplayer.contains(x, y)) {
-                // aquí podrías abrir otra pantalla de multiplayer
-                return;
-            }
-            if (btnExit.contains(x, y)) {
-                Gdx.app.exit();
-                return;
-            }
-        } else {
-            if (btnBosque.contains(x, y)) {
-                game.setScreen(new GameScreen(game, 1));
-                return;
-            }
-            if (btnTeatro.contains(x, y)) {
-                game.setScreen(new GameScreen(game, 2));
-                return;
-            }
-            if (btnAtras.contains(x, y)) {
-                showLevelSelect = false;
-                return;
-            }
-        }
+    @Override
+    public void show() {
     }
 
-    @Override public void resize(int width, int height) { viewport.update(width, height, true); }
-    @Override public void pause() {}
-    @Override public void resume() {}
-    @Override public void hide() {}
-    @Override public void dispose() {
+    @Override
+    public void hide() {
+    }
+
+    @Override
+    public void pause() {
+    }
+
+    @Override
+    public void resume() {
+    }
+
+    @Override
+    public void dispose() {
         sr.dispose();
         batch.dispose();
         font.dispose();

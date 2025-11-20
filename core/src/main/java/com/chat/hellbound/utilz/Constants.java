@@ -8,16 +8,17 @@ public class Constants {
     public static class PlayerConstants {
         public static final int IDLE = 0;
         public static final int RUNNING = 1;
+        public static final int UP = 4;
         public static final int JUMP = 2;
         public static final int FALLING = 3;
         public static final int GROUND = 4;
         public static final int HIT = 5;
         public static final int ATTACK_1 = 6;
         public static final int ATTACK_JUMP_1 = 7;
-        public static final int ATTACK_JUMP_2 = 8;
+        public static final int ATTACK_JUMP_2 = 2;
 
-        public static final int FRAME_W = 81;
-        public static final int FRAME_H = 75;
+        public static final int FRAME_W = 880;
+        public static final int FRAME_H = 905;
 
         public static final int ANI_SPEED = 5;
         public static final float MOVE_SPEED = 240f;
@@ -27,15 +28,11 @@ public class Constants {
 
         public static int getSpriteAmount(int action) {
             switch (action) {
-                case IDLE: return 9;
-                case RUNNING: return 6;
-                case JUMP:
-                case ATTACK_1:
-                case ATTACK_JUMP_1:
-                case ATTACK_JUMP_2: return 3;
-                case GROUND: return 2;
-                case FALLING:
-                case HIT:
+                case IDLE: return 6;
+                case RUNNING: return 5;
+                case ATTACK_JUMP_2: return 7;
+                case FALLING: return 1;
+                case UP: return 1;
                 default: return 1;
             }
         }
@@ -74,24 +71,36 @@ public class Constants {
         public static final float FACE_EPS = 6f;
     }
     public static class HellGuardianConstants {
-        public static final int HELL_GUARDIAN = 0;
+        // Hell Guardian - Demonio rojo que aparece al recolectar 2 objetos
+        public static final int FRAME_W = 1775;  // Ancho de cada frame en el sprite
+        public static final int FRAME_H = 1265;  // Alto de cada frame en el sprite
 
-        public static final int MAX_HP = 5;
-        public static final int DAMAGE = 2;
-        public static final float MOVE_SPEED = 3f;
-        public static final float ATTACK_COOLDOWN = 3.0f;
+        // Animaciones del sprite rojo
+        public static final int IDLE_ROW   = 0; public static final int IDLE_COUNT   = 3;  // Fila 0, 3 frames
+        public static final int RUN_ROW    = 2; public static final int RUN_COUNT    = 3;  // Fila 2, 3 frames
+        public static final int ATTACK_ROW = 3; public static final int ATTACK_COUNT = 3;  // Fila 3, 3 frames
+        public static final int HIT_ROW    = 4; public static final int HIT_COUNT    = 3;  // Fila 4, 3 frames
+        public static final int DEAD_ROW   = 4; public static final int DEAD_COUNT   = 3;  // Usar la misma de HIT para muerte
 
-        // Phases
-        public static final int PHASE_1 = 1;
-        public static final int PHASE_2 = 2;
-        public static final int PHASE_3 = 3;
+        // Estados
+        public static final int IDLE = 0;
+        public static final int RUN = 1;
+        public static final int ATTACK = 2;
+        public static final int HIT = 3;
+        public static final int DEAD = 4;
 
-        // Attack patterns
-        public static final int ATTACK_FIREBALL = 0;
-        public static final int ATTACK_SPREAD = 1;
-        public static final int ATTACK_CIRCULAR = 2;
-        public static final int ATTACK_DASH = 3;
-        public static final int ATTACK_SLAM = 4;
+        // Estadísticas
+        public static final int   ANI_SPEED        = 6;
+        public static final int   MAX_HP           = 4;     // 4 de vida
+        public static final int   DAMAGE           = 2;     // 2 de daño
+        public static final float MOVE_SPEED       = 140f;  // Velocidad similar a Crabby
+        public static final float AGGRO_RANGE      = 300f;  // Rango de detección
+        public static final float ATTACK_RANGE     = 90f;   // Rango de ataque más grande (para golpear desde más lejos)
+        public static final float ATTACK_COOLDOWN  = 1.0f;  // Cooldown entre ataques
+        public static final float ATTACK_LOCK_TIME = 0.45f; // Tiempo que dura la animación de ataque
+        public static final float KNOCKBACK        = 120f;  // Retroceso al ser golpeado
+
+        public static final float FACE_EPS = 6f;
     }
 
     public static class TreeBossConstants {

@@ -22,7 +22,7 @@ public class Player extends Entity implements CameraTarget {
     private int aniIndex = 0, aniTick = 0, aniSpeed = ANI_SPEED;
     private float vx = 0f, vy = 0f;
     private boolean facingRight = true;
-    private float scale = 2.5f;
+    private float scale = 0.09f;
     private float BonusSpeed = 1f;
 
     private final LevelManager levelManager;
@@ -37,22 +37,21 @@ public class Player extends Entity implements CameraTarget {
     private float attackActiveTimer = 0f;
     private boolean attackDealtThisWindow = false;
     private float cooldown = 0f;
-
     private int level;
 
     private final Vector2 camFocus = new Vector2();
 
     private String object = "";
 
-    public Player(float startX, float startY, LevelManager levelManager, int level) {
+    public Player(float startX, float startY, LevelManager levelManager,int level) {
         this.object = object;
         this.BonusSpeed = BonusSpeed;
         this.cooldown = cooldown;
         this.levelManager = levelManager;
-        this.level = level;
         this.lvlData = levelManager.getLevelData();
         this.tileW = levelManager.getTileWidth();
         this.tileH = levelManager.getTileHeight();
+        this.level = level;
         loadAnimations();
         float hbW = FRAME_W * (scale*0.8f);
         float hbH = FRAME_H * (scale*0.8f);
@@ -132,7 +131,27 @@ public class Player extends Entity implements CameraTarget {
         if (ix > 0.1f)  facingRight = true;
         if (ix < -0.1f) facingRight = false;
 
-        int desiredAction = (Math.abs(ix) > 0.05f || Math.abs(iy) > 0.05f) ? RUNNING : IDLE;
+        final float DEADZONE = 0.05f;
+
+        float absX = Math.abs(ix);
+        float absY = Math.abs(iy);
+
+        int desiredAction;
+
+        if (absX < DEADZONE && absY < DEADZONE) {
+            desiredAction = IDLE;
+        }
+
+        else if (absX > absY) {
+            if (ix > 0) desiredAction = RUNNING;
+            else        desiredAction = RUNNING;
+        }
+
+        else {
+            if (iy > 0) desiredAction = UP;
+            else        desiredAction = FALLING;
+        }
+
         setAction(desiredAction);
 
         attackCd = Math.max(0f, attackCd - dt);
@@ -184,6 +203,7 @@ public class Player extends Entity implements CameraTarget {
 
         updateAnimationTick();
     }
+
 
     public void render(SpriteBatch batch) {
         TextureRegion frame = getCurrentFrame();
@@ -271,4 +291,12 @@ public class Player extends Entity implements CameraTarget {
     public void setBonusSpeed(float bonus){
         this.BonusSpeed = bonus;
     }
+
+    public void setNetworkPosition(float x, float y) {
+        if (hitbox != null) {
+            hitbox.x = x;
+            hitbox.y = y;
+        }
+    }
+
 }

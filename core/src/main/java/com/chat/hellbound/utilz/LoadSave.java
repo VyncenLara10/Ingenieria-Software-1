@@ -12,7 +12,7 @@ import static com.chat.hellbound.utilz.Constants.EnemyConstants;
 
 public class LoadSave {
 
-    public static final String PLAYER_ATLAS       = "FANTASMITA AZUL.png";
+    public static final String PLAYER_ATLAS       = "FANTASMITA_AZUL.png";
     public static final String LEVEL_ATLAS        = "spritesleveldefinitive.png";
     public static final String LEVEL_TWO_ATLAS    = "spritesleveldefinitivelvl2.png";
     public static final String LOBBY_ATLAS        = "spriteslobby.png";
