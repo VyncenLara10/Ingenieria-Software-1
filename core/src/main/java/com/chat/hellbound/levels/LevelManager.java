@@ -12,7 +12,7 @@ public class LevelManager {
     private final TextureRegion[] slots;
     private Level currentLevel;
 
-    public LevelManager(Texture atl, int level) {
+    public LevelManager(Texture atl) {
         atlas = atl;
 
         atlas.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
@@ -26,11 +26,11 @@ public class LevelManager {
             slots[i] = new TextureRegion(atlas, i * slotW, 0, slotW, slotH);
         }
 
-        loadLevel(level);
+        loadLevel();
     }
 
-    public void loadLevel(int level) {
-        int[][] data = LoadSave.GetLevelData(level);
+    public void loadLevel() {
+        int[][] data = LoadSave.GetLevelData();
         currentLevel = new Level(data);
     }
 

@@ -38,18 +38,15 @@ public class Player extends Entity implements CameraTarget {
     private boolean attackDealtThisWindow = false;
     private float cooldown = 0f;
 
-    private int level;
-
     private final Vector2 camFocus = new Vector2();
 
     private String object = "";
 
-    public Player(float startX, float startY, LevelManager levelManager, int level) {
+    public Player(float startX, float startY, LevelManager levelManager) {
         this.object = object;
         this.BonusSpeed = BonusSpeed;
         this.cooldown = cooldown;
         this.levelManager = levelManager;
-        this.level = level;
         this.lvlData = levelManager.getLevelData();
         this.tileW = levelManager.getTileWidth();
         this.tileH = levelManager.getTileHeight();
@@ -104,39 +101,41 @@ public class Player extends Entity implements CameraTarget {
         vx = ix * (MOVE_SPEED*BonusSpeed);
         vy = iy * (MOVE_SPEED*BonusSpeed);
 
+        // --- Movimiento horizontal ---
         if (vx != 0) {
             float nx = hitbox.x + vx * dt;
-
-            if (HelpMethods.CanMoveHere(nx, hitbox.y, hitbox.width, hitbox.height,
-                lvlData, tileW, tileH, level))
-            {
+            if (HelpMethods.CanMoveHere(nx, hitbox.y, hitbox.width, hitbox.height, lvlData, tileW, tileH)) {
                 hitbox.x = nx;
             } else {
-                vx = 0;
+                // Ajustar justo al borde del obstáculo sin retroceder
+                hitbox.x = HelpMethods.GetEntityXPosNextToWall(hitbox, vx * dt, lvlData, tileW, tileH);
+                vx = 0f;
             }
         }
 
+        // --- Movimiento vertical ---
         if (vy != 0) {
             float ny = hitbox.y + vy * dt;
-
-            if (HelpMethods.CanMoveHere(hitbox.x, ny, hitbox.width, hitbox.height,
-                lvlData, tileW, tileH, level))
-            {
+            if (HelpMethods.CanMoveHere(hitbox.x, ny, hitbox.width, hitbox.height, lvlData, tileW, tileH)) {
                 hitbox.y = ny;
             } else {
-                vy = 0;
+                hitbox.y = HelpMethods.GetEntityYPosUnderRoofOrAboveFloor(hitbox, vy * dt, lvlData, tileW, tileH);
+                vy = 0f;
             }
         }
 
-
+        // --- Dirección del personaje ---
         if (ix > 0.1f)  facingRight = true;
         if (ix < -0.1f) facingRight = false;
 
+        // --- Estado de animación ---
         int desiredAction = (Math.abs(ix) > 0.05f || Math.abs(iy) > 0.05f) ? RUNNING : IDLE;
         setAction(desiredAction);
 
+        // --- Cooldown de ataque ---
         attackCd = Math.max(0f, attackCd - dt);
 
+        // --- Ataque ---
         if (InputController.attackPressedThisFrame() && attackCd == 0f) {
             attackActiveTimer = 0.22f;
             attackCd = ATTACK_COOLDOWN;
@@ -184,6 +183,7 @@ public class Player extends Entity implements CameraTarget {
 
         updateAnimationTick();
     }
+
 
     public void render(SpriteBatch batch) {
         TextureRegion frame = getCurrentFrame();
@@ -271,4 +271,12 @@ public class Player extends Entity implements CameraTarget {
     public void setBonusSpeed(float bonus){
         this.BonusSpeed = bonus;
     }
+
+    public void setNetworkPosition(float x, float y) {
+        if (hitbox != null) {
+            hitbox.x = x;
+            hitbox.y = y;
+        }
+    }
+
 }
