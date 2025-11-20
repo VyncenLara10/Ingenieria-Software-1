@@ -148,7 +148,8 @@ public class LobbyScreen implements Screen {
                     int level = 1;
 
                     // 👉 CORRECCIÓN
-                    if (hostSession != null) hostSession.setSelectedLevel(level);
+                    if (hostSession != null) hostSession.sendLevelSelection(level);
+
 
                     game.setScreen(new GameScreen(game, level, MultiplayerMode.HOST, hostSession, null));
                     return;
@@ -158,7 +159,8 @@ public class LobbyScreen implements Screen {
                     int level = 2;
 
                     // 👉 CORRECCIÓN
-                    if (hostSession != null) hostSession.setSelectedLevel(level);
+                    if (hostSession != null) hostSession.sendLevelSelection(level);
+
 
                     game.setScreen(new GameScreen(game, level, MultiplayerMode.HOST, hostSession, null));
                     return;

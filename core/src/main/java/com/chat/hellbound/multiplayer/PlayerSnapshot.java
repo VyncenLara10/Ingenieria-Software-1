@@ -7,7 +7,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class PlayerSnapshot {
+public class
+PlayerSnapshot {
 
     public float x;
     public float y;

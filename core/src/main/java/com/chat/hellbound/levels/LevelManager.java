@@ -11,56 +11,85 @@ public class LevelManager {
     private final Texture atlas;
     private final TextureRegion[] slots;
     private Level currentLevel;
+    private int currentLevelIndex;
 
-    public LevelManager(Texture atl, int level) {
-        atlas = atl;
+    public LevelManager(Texture atlas, int level) {
+        this.atlas = atlas;
 
         atlas.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
 
+        // Atlas dividido en 10 columnas (como dijiste)
         int cols = 10;
-        int slotW = atlas.getWidth() / cols;
-        int slotH = atlas.getHeight();
+        int tW = atlas.getWidth() / cols;
+        int tH = atlas.getHeight();
+
         slots = new TextureRegion[cols];
 
-        for (int i = 0; i < cols; i++) {
-            slots[i] = new TextureRegion(atlas, i * slotW, 0, slotW, slotH);
+        for (int c = 0; c < cols; c++) {
+            slots[c] = new TextureRegion(atlas, c * tW, 0, tW, tH);
         }
 
         loadLevel(level);
     }
 
     public void loadLevel(int level) {
+        currentLevelIndex = level;
+
         int[][] data = LoadSave.GetLevelData(level);
         currentLevel = new Level(data);
+    }
+
+    /** 🔥 Para MULTIJUGADOR — sobreescribir mapa con el del HOST */
+    public void setLevelData(int[][] data) {
+        if (data == null) return;
+        currentLevel = new Level(data);
+    }
+
+    public int getCurrentLevelIndex() {
+        return currentLevelIndex;
     }
 
     public Level getCurrentLevel() {
         return currentLevel;
     }
 
-    public void draw(SpriteBatch batch, float xLvlOffset) {
+    public int[][] getLevelData() {
+        return (currentLevel != null ? currentLevel.getLevelData() : null);
+    }
+
+    public int getTileWidth() { return slots[0].getRegionWidth(); }
+    public int getTileHeight() { return slots[0].getRegionHeight(); }
+
+    public int getWorldWidthPx() {
+        return currentLevel.getWidth() * getTileWidth();
+    }
+
+    public int getWorldHeightPx() {
+        return currentLevel.getHeight() * getTileHeight();
+    }
+
+    public void draw(SpriteBatch batch, float xOffset) {
         if (currentLevel == null) return;
 
-        int[][] data = currentLevel.getLevelData();
+        int[][] map = currentLevel.getLevelData();
         int h = currentLevel.getHeight();
         int w = currentLevel.getWidth();
 
-        int spriteW = slots[0].getRegionWidth();
-        int spriteH = slots[0].getRegionHeight();
+        int tileW = getTileWidth();
+        int tileH = getTileHeight();
 
-        for (int mapY = 0; mapY < h; mapY++) {
-            int drawY = (h - 1 - mapY) * spriteH;
+        for (int y = 0; y < h; y++) {
+            int drawY = (h - 1 - y) * tileH;
 
-            for (int mapX = 0; mapX < w; mapX++) {
+            for (int x = 0; x < w; x++) {
 
-                int id = data[mapY][mapX];
+                int id = map[y][x];
 
-                if (id < 0 || id >= slots.length)
-                    continue;
+                if (id < 0 || id >= slots.length) continue;
 
                 TextureRegion region = slots[id];
+                float drawX = x * tileW - xOffset;
 
-                float drawX = mapX * spriteW - xLvlOffset;
                 batch.draw(region, drawX, drawY);
             }
         }
@@ -69,27 +98,4 @@ public class LevelManager {
     public void dispose() {
         atlas.dispose();
     }
-
-    public int getWorldWidthPx() {
-        int w = currentLevel != null ? currentLevel.getWidth() : 0;
-        return w * slots[0].getRegionWidth();
-    }
-
-    public int getWorldHeightPx() {
-        int h = currentLevel != null ? currentLevel.getHeight() : 0;
-        return h * slots[0].getRegionHeight();
-    }
-
-    public int[][] getLevelData() {
-        return currentLevel != null ? currentLevel.getLevelData() : null;
-    }
-
-    public int getTileWidth() {
-        return slots[0].getRegionWidth();
-    }
-
-    public int getTileHeight() {
-        return slots[0].getRegionHeight();
-    }
-
 }

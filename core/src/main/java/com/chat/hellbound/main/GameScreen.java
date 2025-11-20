@@ -7,7 +7,6 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
@@ -16,7 +15,6 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 
 import com.chat.hellbound.entities.Player;
 import com.chat.hellbound.entities.EnemyManager;
@@ -43,14 +41,12 @@ public class GameScreen implements Screen {
 
     private LevelManager levelManager;
     private EnemyManager enemyManager;
+    private BossManager bossManager;
     private InteractiveObject interactiveObject;
     private CameraController camController;
     private TouchControls touchControls;
     private Player player;
     private Player remotePlayer;
-
-    private boolean hellGuardianSpawned = false;
-    private boolean treeBossSpawned = false;
 
     private final ShapeRenderer debugSR = new ShapeRenderer();
     private final ShapeRenderer uiSR = new ShapeRenderer();
@@ -65,6 +61,7 @@ public class GameScreen implements Screen {
 
     private DarknessHandler darknessHandler;
 
+    // -------- MULTIPLAYER --------
     private MultiplayerMode multiplayerMode = MultiplayerMode.OFFLINE;
     private HostSession hostSession;
     private ClientSession clientSession;
@@ -72,7 +69,11 @@ public class GameScreen implements Screen {
 
     private int level;
 
+    // ----------------------------
+    //      CONSTRUCTOR SP
+    // ----------------------------
     public GameScreen(Main game, int level) {
+
         this.game = game;
         this.batch = new SpriteBatch();
         this.level = level;
@@ -82,7 +83,6 @@ public class GameScreen implements Screen {
         this.viewport.apply();
 
         InputController.setViewport(viewport);
-
         this.touchControls = new TouchControls();
 
         camera.position.set(Constants.WORLD_WIDTH / 2f, Constants.WORLD_HEIGHT / 2f, 0f);
@@ -90,20 +90,20 @@ public class GameScreen implements Screen {
         Assets.load();
 
         Texture atlas = LoadSave.GetSpriteAtlas(LoadSave.LEVEL_ATLAS);
-        if (level == 2) {
-            atlas = LoadSave.GetSpriteAtlas(LoadSave.LEVEL_TWO_ATLAS);
-        }
+        if (level == 2) atlas = LoadSave.GetSpriteAtlas(LoadSave.LEVEL_TWO_ATLAS);
 
-        levelManager = new LevelManager(atlas,level);
-        enemyManager = new EnemyManager(levelManager,level);
+        levelManager = new LevelManager(atlas, level);
+        enemyManager = new EnemyManager(levelManager, level);
+        bossManager = new BossManager();
         interactiveObject = new InteractiveObject(levelManager, level);
 
-        this.player = new Player(700, 5800, levelManager,level);
+        this.player = new Player(700, 5800, levelManager, level);
         EnemyShared.hookPlayer(player);
         player.SetObject("SprintBurst");
 
         float worldW = levelManager.getWorldWidthPx();
         float worldH = levelManager.getWorldHeightPx();
+
         camController = new CameraController(
             camera,
             worldW, worldH,
@@ -116,156 +116,221 @@ public class GameScreen implements Screen {
         darknessHandler = new DarknessHandler(Gdx.graphics.getWidth() + 500, Gdx.graphics.getHeight() + 500, 2.0f);
     }
 
-    public GameScreen(Main game, int level, MultiplayerMode mode, HostSession hostSession, ClientSession clientSession) {
-        this(game, level);
+    // ----------------------------
+    //      CONSTRUCTOR MP
+    // ----------------------------
+    public GameScreen(Main game, int level, MultiplayerMode mode,
+                      HostSession hostSession, ClientSession clientSession) {
+
+        // --------- COSAS BÁSICAS ---------
+        this.game = game;
+        this.batch = new SpriteBatch();
+        this.level = level;
         this.multiplayerMode = (mode != null) ? mode : MultiplayerMode.OFFLINE;
+
         this.hostSession = hostSession;
         this.clientSession = clientSession;
-        if (this.multiplayerMode != MultiplayerMode.OFFLINE) {
-            this.remotePlayer = new Player(700, 5800, levelManager,level);
+
+        // --------- CÁMARA + VIEWPORT ---------
+        this.camera = new OrthographicCamera();
+        this.viewport = new FitViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT, camera);
+        this.viewport.apply();
+        InputController.setViewport(viewport);
+
+        this.touchControls = new TouchControls();
+
+        // MUY IMPORTANTE: centrar la cámara
+        camera.position.set(Constants.WORLD_WIDTH / 2f, Constants.WORLD_HEIGHT / 2f, 0f);
+
+        // --------- ASSETS ---------
+        Assets.load();
+
+        Texture atlas = LoadSave.GetSpriteAtlas(LoadSave.LEVEL_ATLAS);
+        if (level == 2) {
+            atlas = LoadSave.GetSpriteAtlas(LoadSave.LEVEL_TWO_ATLAS);
         }
+
+        // --------- NIVEL + SISTEMAS ---------
+        levelManager = new LevelManager(atlas, level);
+
+        // 🔥 HOST: mandar mapa al cliente apenas se crea
+        if (multiplayerMode == MultiplayerMode.HOST && hostSession != null) {
+            hostSession.setLevelData(levelManager.getLevelData());
+        }
+
+        enemyManager = new EnemyManager(levelManager, level);
+        bossManager = new BossManager();
+        interactiveObject = new InteractiveObject(levelManager, level);
+
+        // --------- JUGADOR LOCAL ---------
+        player = new Player(700, 5800, levelManager, level);
+        EnemyShared.hookPlayer(player);
+        player.SetObject("SprintBurst");
+
+        // --------- JUGADOR REMOTO ---------
+        if (multiplayerMode != MultiplayerMode.OFFLINE) {
+            remotePlayer = new Player(700, 5800, levelManager, level);
+        }
+
+        // --------- CÁMARA FOLLOW ---------
+        float worldW = levelManager.getWorldWidthPx();
+        float worldH = levelManager.getWorldHeightPx();
+
+        camController = new CameraController(
+            camera,
+            worldW, worldH,
+            Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT
+        );
+        camController.setLerp(0.22f);
+        camController.setPrimaryTarget(player);
+
+        // --------- UI / PAUSA / OSCURIDAD ---------
+        computeUiRects(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        darknessHandler = new DarknessHandler(
+            Gdx.graphics.getWidth() + 500,
+            Gdx.graphics.getHeight() + 500,
+            2.0f
+        );
     }
 
     private void update(float dt) {
 
+        // Pausa
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             paused = !paused;
         }
+        if (paused) return;
 
-        if (InputController.isAndroid() && Gdx.input.justTouched()) {
-            int sw = Gdx.graphics.getWidth();
-            int sh = Gdx.graphics.getHeight();
-            int tx = Gdx.input.getX();
-            int ty = sh - Gdx.input.getY();
-            if (pauseBtnAndroid.contains(tx, ty)) {
-                paused = !paused;
+        InputController.update();
+        player.update(dt);
+
+        // ============================
+        //   CLIENTE — Cargar mapa UNA VEZ
+        // ============================
+        if (multiplayerMode == MultiplayerMode.CLIENT && clientSession != null) {
+            int[][] map = clientSession.getReceivedMap();
+            if (map != null && !clientSession.isMapApplied()) {
+                levelManager.setLevelData(map);
+                enemyManager = new EnemyManager(levelManager, level);
+                interactiveObject = new InteractiveObject(levelManager, level);
+                clientSession.setMapApplied();
+                Gdx.app.log("NET", "Mapa aplicado al cliente");
             }
         }
 
-        if (!paused) {
-            InputController.update();
-            player.update(dt);
 
-            if (multiplayerMode == MultiplayerMode.HOST && hostSession != null) {
-                hostSession.sendSnapshot(new PlayerSnapshot(player));
+        // ============================
+        //   SNAPSHOTS
+        // ============================
+        if (multiplayerMode == MultiplayerMode.HOST && hostSession != null && hostSession.isConnected()) {
 
-                PlayerSnapshot snap = hostSession.getRemoteSnapshot();
-                if (snap != null && remotePlayer != null) {
-                    snap.applyTo(remotePlayer);
-                    remoteActive = true;
-                }
-                if (remoteActive && remotePlayer != null) {
-                    remotePlayer.update(dt);
-                }
-            } else if (multiplayerMode == MultiplayerMode.CLIENT && clientSession != null) {
-                clientSession.sendSnapshot(new PlayerSnapshot(player));
-                PlayerSnapshot snap = clientSession.getRemoteSnapshot();
-                if (snap != null && remotePlayer != null) {
-                    snap.applyTo(remotePlayer);
-                    remoteActive = true;
-                }
-                if (remoteActive && remotePlayer != null) {
-                    remotePlayer.update(dt);
-                }
-            } else {
-                remoteActive = false;
+            hostSession.sendLocalSnapshot(player);
+
+            PlayerSnapshot snap = hostSession.getRemoteSnapshot();
+            if (snap != null && remotePlayer != null) {
+                snap.applyTo(remotePlayer);
+                remoteActive = true;
             }
 
-            enemyManager.update(dt, player);
-            interactiveObject.update(dt);
+            if (remoteActive) remotePlayer.update(dt);
 
-            // Indicador si el boss está activoç
-            // Spawn Hell Guardian cuando el jugador recoge 2 objetos
-            if (!hellGuardianSpawned && interactiveObject.getCollectedCount() == 2) {
+        } else if (multiplayerMode == MultiplayerMode.CLIENT && clientSession != null) {
 
-                float playerX = player.getHitbox().x;
-                float playerY = player.getHitbox().y;
+            clientSession.sendLocalSnapshot(player);
 
-                float bossX = playerX + 200f;
-                float bossY = playerY;
-
-                HellGuardian hellGuardian = new HellGuardian(bossX, bossY, levelManager, level);
-                enemyManager.addEnemy(hellGuardian);
-
-                hellGuardianSpawned = true;
-                System.out.println("¡Hell Guardian ha aparecido! (2/3 objetos)");
+            PlayerSnapshot snap = clientSession.getRemoteSnapshot();
+            if (snap != null && remotePlayer != null) {
+                snap.applyTo(remotePlayer);
+                remoteActive = true;
             }
 
-// Spawn TreeBoss cuando el jugador recoge TODO
-            if (!treeBossSpawned && interactiveObject.allCollected()) {
-
-                float playerX = player.getHitbox().x;
-                float playerY = player.getHitbox().y;
-
-                float bossX = playerX + 200f;
-                float bossY = playerY;
-
-                TreeBoss treeBoss = new TreeBoss(bossX, bossY, levelManager, level);
-                enemyManager.addEnemy(treeBoss);
-
-                treeBossSpawned = true;
-                System.out.println("¡Tree Boss ha aparecido! (3/3 objetos)");
-            }
-
-
-            if(player.isDead()){
-                game.setScreen(new DeathScreen(game));
-            }
-
-            if (interactiveObject.allCollected()){
-                game.setScreen(new WinScreen(game));
-            }
-            camController.update(dt);
-        } else {
-            handlePauseOverlayInput();
+            if (remoteActive) remotePlayer.update(dt);
         }
-    }
 
-    private void handlePauseOverlayInput() {
-        if (Gdx.input.justTouched()) {
-            int sw = Gdx.graphics.getWidth();
-            int sh = Gdx.graphics.getHeight();
-            int tx = Gdx.input.getX();
-            int ty = sh - Gdx.input.getY();
-            if (exitBtnRect.contains(tx, ty)) {
-                game.setScreen(new MenuScreen(game));
-            }
+        // ============================
+        //   ENEMIGOS Y OBJETOS
+        // ============================
+        enemyManager.update(dt, player);
+        bossManager.update(dt, player);
+        interactiveObject.update(dt);
+
+        // Boss 1
+        if (!bossManager.isBossEncounterActive()
+            && interactiveObject.getCollectedCount() == 2) {
+
+            float px = player.getHitbox().x;
+            float py = player.getHitbox().y;
+
+            HellGuardian boss = new HellGuardian(px + 200f, py, levelManager);
+            bossManager.addBoss(boss);
+            bossManager.triggerBossEncounter(0);
         }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
-            game.setScreen(new MenuScreen(game));
+
+        // Boss 2
+        if (!bossManager.isBossEncounterActive()
+            && interactiveObject.allCollected()) {
+
+            float px = player.getHitbox().x;
+            float py = player.getHitbox().y;
+
+            TreeBoss boss = new TreeBoss(px + 200f, py, levelManager);
+            bossManager.addBoss(boss);
+            bossManager.triggerBossEncounter(0);
         }
+
+        // Muerte / Victoria
+        if (player.isDead()) {
+            game.setScreen(new DeathScreen(game));
+        }
+
+        boolean bossDead = (bossManager.getActiveBoss() == null
+            || bossManager.getActiveBoss().isDefeated());
+
+        if (interactiveObject.allCollected() && bossDead) {
+            game.setScreen(new WinScreen(game));
+        }
+
+        camController.update(dt);
     }
 
     @Override
     public void render(float delta) {
+
         update(delta);
 
         Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        // WORLD
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
+
         levelManager.draw(batch, 0f);
         enemyManager.render(batch);
+        bossManager.render(batch);
         interactiveObject.render(batch);
         player.render(batch);
-        if (remoteActive && remotePlayer != null && multiplayerMode != MultiplayerMode.OFFLINE) {
+
+        if (remoteActive && remotePlayer != null && multiplayerMode != MultiplayerMode.OFFLINE)
             remotePlayer.render(batch);
-        }
+
         batch.end();
 
-        if (DEBUG) {
-            debugSR.setProjectionMatrix(camera.combined);
-            debugSR.begin(ShapeType.Line);
-            player.renderDebug(debugSR);
-            enemyManager.renderDebug(debugSR);
-            debugSR.end();
-        }
+        // Luz / Oscuridad
+        darknessHandler.render(
+            batch,
+            getPlayerCenterX(),
+            getPlayerCenterY(),
+            camera.position.x,
+            camera.position.y,
+            viewport.getWorldWidth(),
+            viewport.getWorldHeight()
+        );
 
-        darknessHandler.render(batch, getPlayerCenterX(), getPlayerCenterY(), camera.position.x, camera.position.y, viewport.getWorldWidth(), viewport.getWorldHeight());
-
+        // UI
         renderUiAndPauseOverlay();
 
+        // Controles Android
         touchControls.render();
     }
 
@@ -280,75 +345,24 @@ public class GameScreen implements Screen {
     }
 
     private void renderUiAndPauseOverlay() {
+
         int sw = Gdx.graphics.getWidth();
         int sh = Gdx.graphics.getHeight();
 
         batch.setProjectionMatrix(viewport.getCamera().combined.cpy().setToOrtho2D(0, 0, sw, sh));
         batch.begin();
 
-        String objectText = "Objetos: " + interactiveObject.getCollectedCount() + "/" + interactiveObject.getTotalObjects();
-        layout.setText(font, objectText);
-        float objX = 20f;
-        float objY = sh - 20f;
-        font.setColor(Color.WHITE);
-        font.draw(batch, layout, objX, objY);
+        String txt = "Objetos: " + interactiveObject.getCollectedCount() + "/" + interactiveObject.getTotalObjects();
+        layout.setText(font, txt);
+        font.draw(batch, layout, 20f, sh - 20f);
+
+        if (bossManager.isBossEncounterActive()) {
+            layout.setText(font, "¡BOSS!");
+            font.setColor(Color.RED);
+            font.draw(batch, layout, (sw - layout.width) / 2f, sh - 20f);
+        }
 
         batch.end();
-
-        if (InputController.isAndroid()) {
-            uiSR.setProjectionMatrix(viewport.getCamera().combined.cpy().setToOrtho2D(
-                0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight()));
-            uiSR.begin(ShapeType.Filled);
-            uiSR.setColor(0, 0, 0, 0.35f);
-            uiSR.rect(pauseBtnAndroid.x, pauseBtnAndroid.y, pauseBtnAndroid.width, pauseBtnAndroid.height);
-            uiSR.end();
-
-            batch.setProjectionMatrix(viewport.getCamera().combined.cpy().setToOrtho2D(
-                0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight()));
-            batch.begin();
-            layout.setText(font, "||");
-            float tx = pauseBtnAndroid.x + (pauseBtnAndroid.width - layout.width) / 2f;
-            float ty = pauseBtnAndroid.y + (pauseBtnAndroid.height + layout.height) / 2f;
-            font.draw(batch, layout, tx, ty);
-            batch.end();
-        }
-
-        if (paused) {
-            int sw1 = Gdx.graphics.getWidth();
-            int sh1 = Gdx.graphics.getHeight();
-
-            uiSR.setProjectionMatrix(viewport.getCamera().combined.cpy().setToOrtho2D(0, 0, sw1, sh1));
-            uiSR.begin(ShapeType.Filled);
-            uiSR.setColor(0f, 0f, 0f, 0.55f);
-            uiSR.rect(0, 0, sw1, sh1);
-
-            float panelW = Math.min(420, (int) (sw1 * 0.8f));
-            float panelH = 220;
-            float px = (sw1 - panelW) / 2f;
-            float py = (sh1 - panelH) / 2f;
-            uiSR.setColor(0.1f, 0.1f, 0.12f, 0.92f);
-            uiSR.rect(px, py, panelW, panelH);
-
-            float btnW = panelW * 0.6f;
-            float btnH = 50f;
-            float bx = px + (panelW - btnW) / 2f;
-            float by = py + 30f;
-
-            exitBtnRect.set(bx, by, btnW, btnH);
-
-            uiSR.setColor(0.25f, 0.25f, 0.3f, 1f);
-            uiSR.rect(exitBtnRect.x, exitBtnRect.y, exitBtnRect.width, exitBtnRect.height);
-            uiSR.end();
-
-            batch.setProjectionMatrix(viewport.getCamera().combined.cpy().setToOrtho2D(0, 0, sw1, sh1));
-            batch.begin();
-            font.setColor(Color.WHITE);
-            layout.setText(font, "Salir");
-            font.draw(batch, layout,
-                exitBtnRect.x + (exitBtnRect.width - layout.width) / 2f,
-                exitBtnRect.y + (exitBtnRect.height + layout.height) / 2f);
-            batch.end();
-        }
     }
 
     private void computeUiRects(int sw, int sh) {
@@ -356,25 +370,13 @@ public class GameScreen implements Screen {
         pauseBtnAndroid.set(12, sh - sz - 12, sz, sz);
     }
 
-    @Override
-    public void resize(int width, int height) {
-        viewport.update(width, height, true);
-        computeUiRects(width, height);
-        //darknessHandler.resize(width, height);
-    }
-
     @Override public void show() {}
-
     @Override public void hide() {}
-
-    @Override
-    public void pause() {
-        paused = true;
-    }
-
-    @Override
-    public void resume() {
-        paused = false;
+    @Override public void pause() {}
+    @Override public void resume() {}
+    @Override public void resize(int w, int h) {
+        viewport.update(w, h, true);
+        computeUiRects(w, h);
     }
 
     @Override
