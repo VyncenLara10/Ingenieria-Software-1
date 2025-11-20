@@ -260,7 +260,7 @@ public class GameScreen implements Screen {
         InputController.invalidateLayout();
         computeUiRects(width, height);
         darknessHandler.rebuild(width, height);
-
+        InputController.setViewport(viewport);
     }
 
     @Override public void pause() {}

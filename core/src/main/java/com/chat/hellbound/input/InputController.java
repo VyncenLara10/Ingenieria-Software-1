@@ -8,21 +8,18 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class InputController {
 
-    // Ejes finales que se usan en el juego
     public static float xAxis = 0f;
     public static float yAxis = 0f;
 
     private static boolean attackPressedThisFrame = false;
     private static boolean activeAvility = false;
 
-    // Coordenadas de botones / joystick dentro del viewport
     private static float joyCX, joyCY, joyR;
     private static float atkCX, atkCY, atkR;
     private static float abiCX, abiCY, abiR;
 
     private static final float MARGIN = 24f;
 
-    // Punteros táctiles
     private static int joyPointer = -1;
     private static int atkPointer = -1;
     private static int abiPointer = -1;
@@ -33,24 +30,29 @@ public class InputController {
     private static final float BTN_HIT_SCALE = 1.25f;
     private static final float JOY_DEADZONE = 0.08f;
 
-    // Viewport real donde se dibuja el juego
     private static int vpX = 0;
     private static int vpY = 0;
-    private static int vpW = 1;
-    private static int vpH = 1;
+    private static int vpW = Gdx.graphics.getWidth();
+    private static int vpH = Gdx.graphics.getHeight();
 
-    // Nuevo: referencia real al viewport
-    private static Viewport viewport;
-    private static final Vector2 tempVec = new Vector2();
+    private static Viewport viewport = null;
 
-    // -------------------------------------------------------------------------
-    // CONFIGURAR VIEWPORT
-    // -------------------------------------------------------------------------
+    // ------------------------------
+    // NUEVO → para conectar el viewport
+    // ------------------------------
     public static void setViewport(Viewport vp) {
         viewport = vp;
     }
 
-    /** Se llama desde la Screen cada vez que se actualiza el viewport */
+    // Convertir touch a coordenadas del mundo dentro del viewport
+    private static Vector2 toViewportCoords(float screenX, float screenY) {
+        if (viewport == null) return new Vector2(screenX, screenY);
+
+        Vector2 out = new Vector2(screenX, screenY);
+        viewport.unproject(out); // ← convierte a coords donde realmente dibujas
+        return out;
+    }
+
     public static void setViewportBounds(int x, int y, int w, int h) {
         vpX = x;
         vpY = y;
@@ -59,9 +61,6 @@ public class InputController {
         layoutDirty = true;
     }
 
-    // -------------------------------------------------------------------------
-    // UPDATE GENERAL
-    // -------------------------------------------------------------------------
     public static void update() {
         attackPressedThisFrame = false;
         activeAvility = false;
@@ -74,17 +73,12 @@ public class InputController {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // DESKTOP INPUT
-    // -------------------------------------------------------------------------
     private static void pollDesktop() {
         float x = 0f, y = 0f;
-
         if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT))  x -= 1f;
         if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) x += 1f;
         if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP))    y += 1f;
         if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN))  y -= 1f;
-
         xAxis = x;
         yAxis = y;
 
@@ -94,7 +88,6 @@ public class InputController {
         if (Gdx.input.isKeyJustPressed(Input.Keys.K)) pressed = true;
         if (Gdx.input.isKeyJustPressed(Input.Keys.Z)) pressed = true;
         if (Gdx.input.isKeyJustPressed(Input.Keys.X)) pressed = true;
-
         attackPressedThisFrame = pressed;
 
         boolean ap = false;
@@ -102,9 +95,6 @@ public class InputController {
         activeAvility = ap;
     }
 
-    // -------------------------------------------------------------------------
-    // TOUCH INPUT (ANDROID)
-    // -------------------------------------------------------------------------
     private static void pollTouch() {
         float x = 0f, y = 0f;
 
@@ -117,19 +107,18 @@ public class InputController {
 
         int maxP = 20;
 
-        // ---------------------------------------------------------------------
-        // 1) ATRIBUIR PUNTEROS
-        // ---------------------------------------------------------------------
         for (int p = 0; p < maxP; p++) {
             if (!Gdx.input.isTouched(p)) continue;
 
             float rawX = Gdx.input.getX(p);
             float rawY = Gdx.input.getY(p);
 
-            // Convertir TOUCH SCREEN → WORLD COORDS del viewport
-            viewport.unproject(tempVec.set(rawX, rawY));
-            float sx = tempVec.x;
-            float sy = tempVec.y;
+            // ------------------------------
+            // NUEVO → convertir coords
+            // ------------------------------
+            Vector2 v = toViewportCoords(rawX, rawY);
+            float sx = v.x;
+            float sy = v.y;
 
             boolean joyFree = (joyPointer == -1);
             boolean atkFree = (atkPointer == -1);
@@ -168,27 +157,22 @@ public class InputController {
             }
         }
 
-        // ---------------------------------------------------------------------
-        // 2) JOYSTICK MOVIMIENTO
-        // ---------------------------------------------------------------------
+        // Joystick movimiento
         if (joyPointer != -1 && Gdx.input.isTouched(joyPointer)) {
             float rawX = Gdx.input.getX(joyPointer);
             float rawY = Gdx.input.getY(joyPointer);
 
-            // Convertir a coords del mundo
-            viewport.unproject(tempVec.set(rawX, rawY));
-            float sx = tempVec.x;
-            float sy = tempVec.y;
+            Vector2 v = toViewportCoords(rawX, rawY);
+            float sx = v.x;
+            float sy = v.y;
 
             float dx = sx - joyCX;
             float dy = sy - joyCY;
             float len = (float) Math.sqrt(dx*dx + dy*dy);
-
             if (len > 0.0001f) {
                 float m = Math.min(1f, len / joyR);
                 float nx = dx / len;
                 float ny = dy / len;
-
                 if (m < JOY_DEADZONE) {
                     x = 0f; y = 0f;
                 } else {
@@ -203,14 +187,8 @@ public class InputController {
         yAxis = y;
         attackPressedThisFrame = newAttack;
         activeAvility = newAbility;
-
-        if (atkPointer != -1 && !Gdx.input.isTouched(atkPointer)) atkPointer = -1;
-        if (abiPointer != -1 && !Gdx.input.isTouched(abiPointer)) abiPointer = -1;
     }
 
-    // -------------------------------------------------------------------------
-    // UTILS
-    // -------------------------------------------------------------------------
     private static boolean isInsideScaled(float x, float y, float cx, float cy, float r, float scale) {
         float rr = r * scale;
         float dx = x - cx, dy = y - cy;
@@ -222,9 +200,6 @@ public class InputController {
         return dx*dx + dy*dy;
     }
 
-    // -------------------------------------------------------------------------
-    // LAYOUT
-    // -------------------------------------------------------------------------
     private static void updateLayoutIfNeeded() {
         if (!layoutDirty) return;
 
@@ -239,10 +214,9 @@ public class InputController {
         float localAtkCX = sw - (MARGIN + localAtkR);
         float localAtkCY = MARGIN + localAtkR;
 
-        float localAbiR = localAtkR * 0.85f;
+        float localAbiR  = localAtkR * 0.85f;
         float localAbiCX = localAtkCX;
         float localAbiCY = localAtkCY + localAtkR + MARGIN + localAbiR;
-
         float abiCYMax = sh - (MARGIN + localAbiR);
         if (localAbiCY > abiCYMax) localAbiCY = abiCYMax;
 
@@ -263,21 +237,18 @@ public class InputController {
 
     public static void invalidateLayout() { layoutDirty = true; }
 
-    // -------------------------------------------------------------------------
-    // GETTERS
-    // -------------------------------------------------------------------------
     public static boolean attackPressedThisFrame() { return attackPressedThisFrame; }
-    public static boolean activeAvilityPressed()   { return activeAvility; }
+    public static boolean activeAvilityPressed(){ return activeAvility; }
 
     public static float getJoyCX() { return joyCX; }
     public static float getJoyCY() { return joyCY; }
-    public static float getJoyR()  { return joyR; }
+    public static float getJoyR()  { return joyR;  }
     public static float getAtkCX() { return atkCX; }
     public static float getAtkCY() { return atkCY; }
-    public static float getAtkR()  { return atkR; }
+    public static float getAtkR()  { return atkR;  }
     public static float getAbiCX() { return abiCX; }
     public static float getAbiCY() { return abiCY; }
-    public static float getAbiR()  { return abiR; }
+    public static float getAbiR()  { return abiR;  }
 
     public static boolean isJoyActive() {
         return joyPointer != -1;
