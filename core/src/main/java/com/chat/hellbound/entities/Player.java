@@ -101,41 +101,39 @@ public class Player extends Entity implements CameraTarget {
         vx = ix * (MOVE_SPEED*BonusSpeed);
         vy = iy * (MOVE_SPEED*BonusSpeed);
 
-        // --- Movimiento horizontal ---
         if (vx != 0) {
             float nx = hitbox.x + vx * dt;
-            if (HelpMethods.CanMoveHere(nx, hitbox.y, hitbox.width, hitbox.height, lvlData, tileW, tileH)) {
+
+            if (HelpMethods.CanMoveHere(nx, hitbox.y, hitbox.width, hitbox.height,
+                lvlData, tileW, tileH))
+            {
                 hitbox.x = nx;
             } else {
-                // Ajustar justo al borde del obstáculo sin retroceder
-                hitbox.x = HelpMethods.GetEntityXPosNextToWall(hitbox, vx * dt, lvlData, tileW, tileH);
-                vx = 0f;
+                vx = 0;
             }
         }
 
-        // --- Movimiento vertical ---
         if (vy != 0) {
             float ny = hitbox.y + vy * dt;
-            if (HelpMethods.CanMoveHere(hitbox.x, ny, hitbox.width, hitbox.height, lvlData, tileW, tileH)) {
+
+            if (HelpMethods.CanMoveHere(hitbox.x, ny, hitbox.width, hitbox.height,
+                lvlData, tileW, tileH))
+            {
                 hitbox.y = ny;
             } else {
-                hitbox.y = HelpMethods.GetEntityYPosUnderRoofOrAboveFloor(hitbox, vy * dt, lvlData, tileW, tileH);
-                vy = 0f;
+                vy = 0;
             }
         }
 
-        // --- Dirección del personaje ---
+
         if (ix > 0.1f)  facingRight = true;
         if (ix < -0.1f) facingRight = false;
 
-        // --- Estado de animación ---
         int desiredAction = (Math.abs(ix) > 0.05f || Math.abs(iy) > 0.05f) ? RUNNING : IDLE;
         setAction(desiredAction);
 
-        // --- Cooldown de ataque ---
         attackCd = Math.max(0f, attackCd - dt);
 
-        // --- Ataque ---
         if (InputController.attackPressedThisFrame() && attackCd == 0f) {
             attackActiveTimer = 0.22f;
             attackCd = ATTACK_COOLDOWN;
