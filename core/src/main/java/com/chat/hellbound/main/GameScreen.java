@@ -277,7 +277,6 @@ public class GameScreen implements Screen {
         debugSR.dispose();
         uiSR.dispose();
         darknessHandler.dispose();
-        //if (darknessMask != null) darknessMask.dispose();
         font.dispose();
     }
 }
