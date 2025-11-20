@@ -67,10 +67,10 @@ public class GameScreen implements Screen {
 
         InputController.setViewport(viewport);
         InputController.setViewportBounds(
-            (int) viewport.getScreenX(),
-            (int) viewport.getScreenY(),
-            (int) viewport.getScreenWidth(),
-            (int) viewport.getScreenHeight()
+            viewport.getScreenX(),
+            viewport.getScreenY(),
+            viewport.getScreenWidth(),
+            viewport.getScreenHeight()
         );
 
 
