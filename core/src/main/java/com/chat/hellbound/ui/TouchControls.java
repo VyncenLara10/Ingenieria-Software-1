@@ -3,6 +3,7 @@ package com.chat.hellbound.ui;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.math.Vector3;
 import com.chat.hellbound.input.InputController;
 
 public class TouchControls {
@@ -10,10 +11,12 @@ public class TouchControls {
     private final ShapeRenderer sr = new ShapeRenderer();
     private final Matrix4 proj = new Matrix4();
 
-    private final float outerA = 0.20f;
-    private final float innerA = 0.45f;
+    private final float outerA = 0.25f;
+    private final float innerA = 0.50f;
     private final float shadowOffset = 6f;
     private final float shadowA = 0.25f;
+
+    private final Vector3 touchTmp = new Vector3();
 
     public void render() {
         if (!InputController.isAndroid()) return;
@@ -36,6 +39,21 @@ public class TouchControls {
         float ey = InputController.getAbiCY();
         float er = InputController.getAbiR();
 
+        float axisX = InputController.xAxis;
+        float axisY = InputController.yAxis;
+
+        float stickX = jx;
+        float stickY = jy;
+
+        if (InputController.isJoyActive()
+            && (Math.abs(axisX) > 0.001f || Math.abs(axisY) > 0.001f)) {
+
+            float maxOffset = jr * 0.55f;
+
+            stickX = jx + axisX * maxOffset;
+            stickY = jy + axisY * maxOffset;
+        }
+
         sr.begin(ShapeRenderer.ShapeType.Filled);
 
         sr.setColor(0, 0, 0, shadowA);
@@ -44,18 +62,8 @@ public class TouchControls {
         sr.setColor(1f, 1f, 1f, outerA);
         sr.circle(jx, jy, jr);
 
-        float stickX = jx;
-        float stickY = jy;
-        float axisX = InputController.xAxis;
-        float axisY = InputController.yAxis;
-        if (InputController.isJoyActive() && (Math.abs(axisX) > 0.0001f || Math.abs(axisY) > 0.0001f)) {
-            float maxOffset = jr * 0.55f;
-            stickX = jx + axisX * maxOffset;
-            stickY = jy + axisY * maxOffset;
-        }
-
         sr.setColor(1f, 1f, 1f, innerA);
-        sr.circle(stickX, stickY, jr * 0.45f);
+        sr.circle(stickX, stickY, jr * 0.40f);
 
         sr.setColor(0, 0, 0, shadowA);
         sr.circle(ax + shadowOffset, ay - shadowOffset, ar + 4f);
