@@ -106,23 +106,28 @@ public class Player extends Entity implements CameraTarget {
 
         if (vx != 0) {
             float nx = hitbox.x + vx * dt;
-            if (HelpMethods.CanMoveHere(nx, hitbox.y, hitbox.width, hitbox.height, lvlData, tileW, tileH, level)) {
+
+            if (HelpMethods.CanMoveHere(nx, hitbox.y, hitbox.width, hitbox.height,
+                lvlData, tileW, tileH, level))
+            {
                 hitbox.x = nx;
             } else {
-                hitbox.x = HelpMethods.GetEntityXPosNextToWall(hitbox, vx * dt, lvlData, tileW, tileH, level);
-                vx = 0f;
+                vx = 0;
             }
         }
 
         if (vy != 0) {
             float ny = hitbox.y + vy * dt;
-            if (HelpMethods.CanMoveHere(hitbox.x, ny, hitbox.width, hitbox.height, lvlData, tileW, tileH, level)) {
+
+            if (HelpMethods.CanMoveHere(hitbox.x, ny, hitbox.width, hitbox.height,
+                lvlData, tileW, tileH, level))
+            {
                 hitbox.y = ny;
             } else {
-                hitbox.y = HelpMethods.GetEntityYPosUnderRoofOrAboveFloor(hitbox, vy * dt, lvlData, tileW, tileH, level);
-                vy = 0f;
+                vy = 0;
             }
         }
+
 
         if (ix > 0.1f)  facingRight = true;
         if (ix < -0.1f) facingRight = false;
@@ -179,7 +184,6 @@ public class Player extends Entity implements CameraTarget {
 
         updateAnimationTick();
     }
-
 
     public void render(SpriteBatch batch) {
         TextureRegion frame = getCurrentFrame();

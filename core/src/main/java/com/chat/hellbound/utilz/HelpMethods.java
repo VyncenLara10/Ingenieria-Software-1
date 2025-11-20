@@ -21,7 +21,6 @@ public class HelpMethods {
         );
     }
 
-
     public static boolean IsSolid(float x, float y, int[][] lvlData, int tileW, int tileH, int level) {
         if (x < 0 || y < 0) return true;
 
@@ -116,7 +115,7 @@ public class HelpMethods {
                                                 int[][] lvlData, int tileW, int tileH, int level) {
         if (xDelta > 0) {
             int tileX = (int)((hitbox.x + hitbox.width + xDelta) / tileW);
-            float newX = tileX * tileW - hitbox.width - 0.001f;
+            float newX = (tileX * tileW) - hitbox.width;
 
             if (IsSolid(hitbox.x + hitbox.width + xDelta, hitbox.y + hitbox.height / 2, lvlData, tileW, tileH, level))
                 return newX;
@@ -124,7 +123,7 @@ public class HelpMethods {
 
         } else if (xDelta < 0) {
             int tileX = (int)((hitbox.x + xDelta) / tileW);
-            float newX = (tileX + 1) * tileW - 0.001f;
+            float newX = (tileX + 1) * tileW;
 
             if (IsSolid(hitbox.x + xDelta, hitbox.y + hitbox.height / 2, lvlData, tileW, tileH, level))
                 return newX;
@@ -138,7 +137,7 @@ public class HelpMethods {
                                                            int[][] lvlData, int tileW, int tileH, int level) {
         if (yDelta > 0) {
             int tileY = (int)((hitbox.y + hitbox.height + yDelta) / tileH);
-            float newY = tileY * tileH - hitbox.height;
+            float newY = (tileY * tileH) - hitbox.height;
 
             if (IsSolid(hitbox.x + hitbox.width / 2, hitbox.y + hitbox.height + yDelta, lvlData, tileW, tileH, level))
                 return newY;
@@ -155,7 +154,6 @@ public class HelpMethods {
 
         return hitbox.y;
     }
-
 
     public static boolean IsEntityOnFloor(Rectangle hitbox,
                                           int[][] lvlData, int tileW, int tileH, int level) {
