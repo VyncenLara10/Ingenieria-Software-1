@@ -7,9 +7,12 @@ import com.chat.hellbound.gamestates.Gamestate;
 public class Main extends Game {
 
     private Gamestate currentState = Gamestate.MENU;
+    private boolean showIntroVideo = false; // Cambiar a false para saltar el video
 
     @Override
     public void create() {
+        // Si showIntroVideo es true, mostrar video; sino ir directo al menú
+
         setState(Gamestate.MENU);
     }
 
