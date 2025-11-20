@@ -1,343 +1,259 @@
 package com.chat.hellbound.entities;
 
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
+import com.chat.hellbound.levels.LevelManager;
 import com.chat.hellbound.utilz.Assets;
-import com.chat.hellbound.utilz.Constants;
+import com.chat.hellbound.utilz.TextureUtils;
 
-import java.util.ArrayList;
-import java.util.List;
+import static com.chat.hellbound.utilz.Constants.TreeBossConstants.*;
 
+/**
+ * TreeBoss - Version ULTRA SIMPLE sin HelpMethods complicados
+ */
 public class HellGuardian extends Boss {
 
-    // Visual properties
-    private Color bossColor;
-    private float pulseTimer;
-    private TextureRegion sprite;
+    private final LevelManager levelManager;
 
-    // Attack properties
-    private List<Projectile> projectiles;
-    private float dashSpeed;
-    private boolean isDashing;
-    private float dashTimer;
-    private float originalX, originalY;
-    private float velocityX, velocityY; // Para el dash
+    private TextureRegion[][] frames;
 
-    // Slam attack
-    private boolean isSlamming;
-    private float slamTimer;
-    private float slamHeight;
+    private float attackCooldownTimer = ATTACK_COOLDOWN;
+    private float attackLock = 0f;
+    private float hitLock = 0f;
 
-    public HellGuardian(float x, float y) {
-        super(x, y, 96, 96, 1000); // 1000 HP
-        this.moveSpeed = 50f;
-        this.bossColor = new Color(0.8f, 0.2f, 0.1f, 1f);
-        this.projectiles = new ArrayList<>();
-        this.dashSpeed = 400f;
-        this.isDashing = false;
-        this.isSlamming = false;
-        this.pulseTimer = 0;
-        this.originalX = x;
-        this.originalY = y;
-        this.velocityX = 0;
-        this.velocityY = 0;
+    private float scale = BOSS_SCALE;
 
-        // Obtener un sprite de Crabby como placeholder
-        Texture atlas = Assets.getCrabbyAtlas();
-        this.sprite = new TextureRegion(atlas, 0, 0, 72, 33);
+    private final Rectangle attackBox = new Rectangle();
+
+    // Estados
+    private int action = IDLE;
+    private int aniIndex = 0;
+    private float aniTick = 0;
+    private boolean facingRight = true;
+    private boolean dead = false;
+
+    private static final boolean SPRITE_FACES_RIGHT = false;
+    private static final float HIT_LOCK_TIME = 0.25f;
+
+    public HellGuardian(float x, float y, LevelManager lm) {
+        super(x, y, (int)(FRAME_W * BOSS_SCALE), (int)(FRAME_H * BOSS_SCALE), MAX_HP);
+
+        this.levelManager = lm;
+
+        Texture atlas = Assets.getHellGuardianAtlas();
+        TextureUtils.prepareTexture(atlas);
+        frames = TextureRegion.split(atlas, FRAME_W, FRAME_H);
+        TextureUtils.fixBleeding(frames);
+
+        this.maxHealth = MAX_HP;
+        this.currentHealth = maxHealth;
     }
 
     @Override
     public void update(float delta, Player player) {
-        if (isDefeated || !isActive) return;
+        if (!isActive) return;
 
-        pulseTimer += delta;
+        if (dead || isDefeated) {
+            action = DEAD;
+            updateDeath(delta);
+            return;
+        }
+
+        // Actualizar timers
+        attackCooldownTimer = Math.max(0f, attackCooldownTimer - delta);
+        attackLock = Math.max(0f, attackLock - delta);
+        hitLock = Math.max(0f, hitLock - delta);
         updateFlash(delta);
 
-        // Update attack timer
-        attackTimer -= delta;
-
-        // Execute current attack
-        if (isDashing) {
-            updateDash(delta, player);
-        } else if (isSlamming) {
-            updateSlam(delta, player);
-        } else if (attackTimer <= 0) {
-            selectAttackPattern();
-            executeAttack(player);
-            attackTimer = attackCooldown;
+        if (hitLock > 0f) {
+            action = HIT;
+            updateAnimation(delta, HIT_COUNT);
+            return;
         }
 
-        // Update projectiles
-        updateProjectiles(delta, player);
+        // Calcular dirección al jugador
+        Vector2 playerPos = EnemyShared.playerCenter();
+        float cx = hitbox.x + hitbox.width * 0.5f;
+        float cy = hitbox.y + hitbox.height * 0.5f;
+        float dx = playerPos.x - cx;
+        float dy = playerPos.y - cy;
+        float dist2 = dx*dx + dy*dy;
 
-        // Gentle hover movement
-        if (!isDashing && !isSlamming) {
-            y = originalY + (float) Math.sin(pulseTimer * 2) * 10;
-            hitbox.y = y;
+        float desiredVx = 0f, desiredVy = 0f;
+
+        // Comportamiento de persecución
+        if (dist2 < AGGRO_RANGE * AGGRO_RANGE) {
+            if (Math.abs(dx) > FACE_EPS) facingRight = dx > 0;
+            float len = (float)Math.sqrt(dist2);
+            if (len > 1e-5f) {
+                float nx = dx / len;
+                float ny = dy / len;
+
+                // Velocidad aumentada por fase
+                float speedMultiplier = 1.0f;
+                if (currentPhase == 2) speedMultiplier = 1.3f;
+                if (currentPhase == 3) speedMultiplier = 1.6f;
+
+                desiredVx = nx * MOVE_SPEED * speedMultiplier;
+                desiredVy = ny * MOVE_SPEED * speedMultiplier;
+            }
+            if (len < ATTACK_RANGE && attackCooldownTimer == 0f && attackLock == 0f) {
+                doAttack();
+                attackCooldownTimer = ATTACK_COOLDOWN * (currentPhase == 3 ? 0.7f : 1.0f);
+                attackLock = ATTACK_LOCK_TIME;
+            }
         }
-    }
 
-    @Override
-    public void selectAttackPattern() {
-        // Phase-based attack selection
-        if (currentPhase == 1) {
-            attackPattern = MathUtils.random(0, 2); // Basic attacks
-        } else if (currentPhase == 2) {
-            attackPattern = MathUtils.random(0, 3); // Add dash
+        if (attackLock > 0f) {
+            action = ATTACK;
+            desiredVx = 0f;
+            desiredVy = 0f;
         } else {
-            attackPattern = MathUtils.random(0, 4); // All attacks including slam
-        }
-    }
-
-    @Override
-    public void executeAttack(Player player) {
-        switch (attackPattern) {
-            case 0:
-                fireballAttack(player);
-                break;
-            case 1:
-                spreadShotAttack(player);
-                break;
-            case 2:
-                circularAttack();
-                break;
-            case 3:
-                dashAttack(player);
-                break;
-            case 4:
-                groundSlamAttack();
-                break;
-        }
-    }
-
-    private void fireballAttack(Player player) {
-        // Single aimed fireball
-        Rectangle playerHB = player.getHitbox();
-        float playerX = playerHB.x + playerHB.width / 2;
-        float playerY = playerHB.y + playerHB.height / 2;
-        float angle = (float) Math.atan2(playerY - y, playerX - x);
-        projectiles.add(new Projectile(x + width/2, y + height/2, angle, 200f, 20));
-    }
-
-    private void spreadShotAttack(Player player) {
-        // 5 projectiles in a spread
-        Rectangle playerHB = player.getHitbox();
-        float playerX = playerHB.x + playerHB.width / 2;
-        float playerY = playerHB.y + playerHB.height / 2;
-        float baseAngle = (float) Math.atan2(playerY - y, playerX - x);
-        for (int i = -2; i <= 2; i++) {
-            float angle = baseAngle + (i * 0.3f);
-            projectiles.add(new Projectile(x + width/2, y + height/2, angle, 180f, 15));
-        }
-    }
-
-    private void circularAttack() {
-        // Ring of projectiles
-        int count = currentPhase * 8; // More projectiles in later phases
-        for (int i = 0; i < count; i++) {
-            float angle = (float) (i * 2 * Math.PI / count);
-            projectiles.add(new Projectile(x + width/2, y + height/2, angle, 150f, 12));
-        }
-    }
-
-    private void dashAttack(Player player) {
-        isDashing = true;
-        dashTimer = 0.8f;
-        // Calculate dash direction towards player
-        Rectangle playerHB = player.getHitbox();
-        float playerX = playerHB.x + playerHB.width / 2;
-        float playerY = playerHB.y + playerHB.height / 2;
-        float angle = (float) Math.atan2(playerY - y, playerX - x);
-        velocityX = (float) Math.cos(angle) * dashSpeed;
-        velocityY = (float) Math.sin(angle) * dashSpeed;
-    }
-
-    private void groundSlamAttack() {
-        isSlamming = true;
-        slamTimer = 1.0f;
-        slamHeight = y + 200;
-    }
-
-    private void updateDash(float delta, Player player) {
-        dashTimer -= delta;
-
-        x += velocityX * delta;
-        y += velocityY * delta;
-        hitbox.x = x;
-        hitbox.y = y;
-
-        if (dashTimer <= 0) {
-            isDashing = false;
-            velocityX = 0;
-            velocityY = 0;
+            action = (Math.abs(desiredVx) > 0.01f || Math.abs(desiredVy) > 0.01f) ? RUN : IDLE;
         }
 
-        // Check collision with player during dash
-        if (getHitbox().overlaps(player.getHitbox())) {
-            // El jugador recibirá daño del sistema de colisión
-            isDashing = false;
-        }
+        // MOVIMIENTO SIMPLE - sin colisiones complicadas
+        hitbox.x += desiredVx * delta;
+        hitbox.y += desiredVy * delta;
+
+        updateAnimation(delta, getActionFrameCount());
     }
 
-    private void updateSlam(float delta, Player player) {
-        slamTimer -= delta;
-
-        if (slamTimer > 0.5f) {
-            // Rising phase
-            y += 300 * delta;
-            hitbox.y = y;
-        } else if (slamTimer > 0) {
-            // Falling phase
-            y -= 600 * delta;
-            hitbox.y = y;
-        } else {
-            // Impact
-            isSlamming = false;
-            y = originalY;
-            hitbox.y = y;
-
-            // Damage player if close
-            Rectangle playerHB = player.getHitbox();
-            float playerX = playerHB.x + playerHB.width / 2;
-            float playerY = playerHB.y + playerHB.height / 2;
-            float distance = (float) Math.sqrt(
-                Math.pow(playerX - x, 2) + Math.pow(playerY - y, 2)
-            );
-            if (distance < 150) {
-                // El daño se maneja por el sistema de colisión
-            }
-
-            // Create shockwave projectiles
-            for (int i = 0; i < 12; i++) {
-                float angle = (float) (i * 2 * Math.PI / 12);
-                projectiles.add(new Projectile(x + width/2, y, angle, 200f, 15));
-            }
-        }
-    }
-
-    private void updateProjectiles(float delta, Player player) {
-        List<Projectile> toRemove = new ArrayList<>();
-
-        for (Projectile proj : projectiles) {
-            proj.update(delta);
-
-            // Check collision with player
-            if (proj.getHitbox().overlaps(player.getHitbox())) {
-                // El daño se maneja por el sistema de colisión del juego
-                toRemove.add(proj);
-            }
-
-            // Remove if out of bounds
-            if (proj.isOutOfBounds()) {
-                toRemove.add(proj);
-            }
-        }
-
-        projectiles.removeAll(toRemove);
+    private void doAttack() {
+        action = ATTACK;
+        aniIndex = 0;
+        aniTick = 0;
+        float w = (FRAME_W * scale) * 0.7f;
+        float h = (FRAME_H * scale) * 0.6f;
+        float ax = facingRight ? (hitbox.x + hitbox.width) : (hitbox.x - w);
+        float ay = hitbox.y + hitbox.height * 0.25f;
+        attackBox.set(ax, ay, w, h);
+        EnemyShared.queueEnemyAttack(this, attackBox, DAMAGE);
     }
 
     @Override
     public void render(SpriteBatch batch) {
         if (!isActive) return;
 
-        // Determine boss color based on state
-        Color renderColor = bossColor;
+        TextureRegion f = currentFrame();
+        float w = FRAME_W * scale;
+        float h = FRAME_H * scale;
+        boolean wantRight = facingRight;
+        float scaleX = (SPRITE_FACES_RIGHT ? (wantRight ? 1f : -1f) : (wantRight ? -1f : 1f));
+
         if (isFlashing) {
-            renderColor = Color.WHITE;
-        } else if (isEnraged) {
-            renderColor = new Color(1f, 0.1f, 0f, 1f);
+            batch.setColor(1f, 0.3f, 0.3f, 1f);
         }
 
-        // Pulsing effect
-        float scale = 1f + (float) Math.sin(pulseTimer * 4) * 0.05f;
+        batch.draw(f, hitbox.x, hitbox.y, w * 0.5f, 0f, w, h, scaleX, 1f, 0f);
 
-        // Draw boss
-        batch.setColor(renderColor);
-        batch.draw(sprite,
-            x - (width * scale - width) / 2,
-            y - (height * scale - height) / 2,
-            width * scale,
-            height * scale);
-
-        // Draw projectiles
-        batch.setColor(new Color(1f, 0.5f, 0f, 1f));
-        for (Projectile proj : projectiles) {
-            batch.draw(sprite,
-                proj.x - 8, proj.y - 8, 16, 16);
+        if (isFlashing) {
+            batch.setColor(1f, 1f, 1f, 1f);
         }
-
-        batch.setColor(Color.WHITE);
-
-        // Draw health bar
-        drawHealthBar(batch);
     }
 
-    private void drawHealthBar(SpriteBatch batch) {
-        float barWidth = 200;
-        float barHeight = 20;
-        float barX = x + width/2 - barWidth/2;
-        float barY = y + height + 20;
+    private TextureRegion currentFrame() {
+        int row, count;
+        switch (action) {
+            case RUN:    row = RUN_ROW;    count = RUN_COUNT;    break;
+            case ATTACK: row = ATTACK_ROW; count = ATTACK_COUNT; break;
+            case HIT:    row = HIT_ROW;    count = HIT_COUNT;    break;
+            case DEAD:   row = DEAD_ROW;   count = DEAD_COUNT;   break;
+            case IDLE:
+            default:     row = IDLE_ROW;   count = IDLE_COUNT;   break;
+        }
+        row = Math.max(0, Math.min(row, frames.length - 1));
+        int cols = frames[row].length;
+        int col = aniIndex % Math.max(1, Math.min(count, cols));
+        return frames[row][col];
+    }
 
-        // Background (usar un pixel blanco del sprite)
-        batch.setColor(Color.DARK_GRAY);
-        batch.draw(sprite, barX, barY, barWidth, barHeight);
+    private int getActionFrameCount() {
+        switch (action) {
+            case RUN:    return RUN_COUNT;
+            case ATTACK: return ATTACK_COUNT;
+            case HIT:    return HIT_COUNT;
+            case DEAD:   return DEAD_COUNT;
+            case IDLE:
+            default:     return IDLE_COUNT;
+        }
+    }
 
-        // Health
-        float healthPercent = (float) currentHealth / maxHealth;
-        Color healthColor = Color.RED;
-        if (healthPercent > 0.66f) healthColor = Color.GREEN;
-        else if (healthPercent > 0.33f) healthColor = Color.YELLOW;
+    private void updateAnimation(float delta, int frameCount) {
+        aniTick += delta * ANI_SPEED * 60f;
+        if (aniTick >= 1f) {
+            aniTick = 0;
+            aniIndex++;
+            if (aniIndex >= frameCount) {
+                aniIndex = 0;
+            }
+        }
+    }
 
-        batch.setColor(healthColor);
-        batch.draw(sprite, barX, barY, barWidth * healthPercent, barHeight);
+    private void updateDeath(float delta) {
+        aniTick += delta * ANI_SPEED * 60f;
+        if (aniTick >= 1f) {
+            aniTick = 0;
+            if (aniIndex < DEAD_COUNT - 1) {
+                aniIndex++;
+            }
+        }
+    }
 
-        batch.setColor(Color.WHITE);
+    @Override
+    public void takeDamage(int damage) {
+        if (isDefeated || dead) return;
+
+        currentHealth -= damage;
+        isFlashing = true;
+        flashTimer = 0.2f;
+
+        // Knockback
+        float dir = facingRight ? -1f : 1f;
+        hitbox.x += dir * KNOCKBACK * 0.1f;
+
+        action = HIT;
+        aniIndex = 0;
+        aniTick = 0;
+        hitLock = HIT_LOCK_TIME;
+
+        if (currentHealth <= 0) {
+            currentHealth = 0;
+            isDefeated = true;
+            dead = true;
+            onDefeat();
+        } else {
+            updatePhase();
+        }
     }
 
     @Override
     protected void onDefeat() {
-        projectiles.clear();
-        // Play defeat animation/sound
+        dead = true;
+        action = DEAD;
+        aniIndex = 0;
+        aniTick = 0;
+        System.out.println("¡Tree Boss derrotado!");
     }
 
-    public List<Projectile> getProjectiles() {
-        return projectiles;
+    @Override
+    public void selectAttackPattern() {
+        // Simple
     }
 
-    // Inner class for projectiles
-    public static class Projectile {
-        float x, y;
-        float velocityX, velocityY;
-        int damage;
-        float lifetime;
+    @Override
+    public void executeAttack(Player player) {
+        // Se ejecuta en doAttack()
+    }
 
-        public Projectile(float x, float y, float angle, float speed, int damage) {
-            this.x = x;
-            this.y = y;
-            this.velocityX = (float) Math.cos(angle) * speed;
-            this.velocityY = (float) Math.sin(angle) * speed;
-            this.damage = damage;
-            this.lifetime = 5f;
-        }
+    public boolean isDead() {
+        return dead;
+    }
 
-        public void update(float delta) {
-            x += velocityX * delta;
-            y += velocityY * delta;
-            lifetime -= delta;
-        }
-
-        public Rectangle getHitbox() {
-            return new Rectangle(x - 8, y - 8, 16, 16);
-        }
-
-        public boolean isOutOfBounds() {
-            return lifetime <= 0 || x < -100 || x > Constants.GAME_WIDTH + 100
-                || y < -100 || y > Constants.GAME_HEIGHT + 100;
-        }
+    public int getAction() {
+        return action;
     }
 }

@@ -12,7 +12,7 @@ import static com.chat.hellbound.utilz.Constants.EnemyConstants;
 
 public class LoadSave {
 
-    public static final String PLAYER_ATLAS       = "player_sprites.png";
+    public static final String PLAYER_ATLAS       = "FANTASMITA AZUL.png";
     public static final String LEVEL_ATLAS        = "spritesleveldefinitive.png";
     public static final String LEVEL_TWO_ATLAS    = "spritesleveldefinitivelvl2.png";
     public static final String LOBBY_ATLAS        = "spriteslobby.png";
@@ -37,6 +37,7 @@ public class LoadSave {
     public static final String CRABBY_SPRITE      = "crabby_sprite.png";
     public static final String STATUS_BAR         = "health_power_bar.png";
     public static final String TREE_BOSS_SPRITE = "tree_boss_spritesheet.png";
+    public static final String HELLGUARDIAN = "HellGuardian.png";
 
     public static Texture GetSpriteAtlas(String fileName) {
         return new Texture(Gdx.files.internal(fileName));

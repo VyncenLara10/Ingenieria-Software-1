@@ -135,13 +135,24 @@ public class GameScreen implements Screen {
             bossManager.update(dt, player);
             interactiveObject.update(dt);
 
-            // Trigger TreeBoss cuando se tengan los 3 objetos
-            if (!bossManager.isBossEncounterActive() && interactiveObject.allCollected()) {
-                // Spawnear el TreeBoss cerca del jugador cuando se recolecten los 3 objetos
+            if (!bossManager.isBossEncounterActive() && interactiveObject.getCollectedCount() == 2) {
                 float playerX = player.getHitbox().x;
                 float playerY = player.getHitbox().y;
 
-                // Spawnear el boss un poco adelante del jugador (200 pixels)
+                float bossX = playerX + 200f;
+                float bossY = playerY;
+
+                HellGuardian hellGuardian = new HellGuardian(bossX, bossY, levelManager);
+                bossManager.addBoss(hellGuardian);
+                bossManager.triggerBossEncounter(0);
+
+                System.out.println("¡Hell Guardian ha aparecido! (2/3 objetos)");
+            }
+
+            if (!bossManager.isBossEncounterActive() && interactiveObject.allCollected()) {
+                float playerX = player.getHitbox().x;
+                float playerY = player.getHitbox().y;
+
                 float bossX = playerX + 200f;
                 float bossY = playerY;
 
@@ -149,7 +160,7 @@ public class GameScreen implements Screen {
                 bossManager.addBoss(treeBoss);
                 bossManager.triggerBossEncounter(0);
 
-                System.out.println("¡Tree Boss ha aparecido!");
+                System.out.println("¡Tree Boss ha aparecido! (3/3 objetos)");
             }
 
             if(player.isDead()){
