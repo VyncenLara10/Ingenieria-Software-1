@@ -66,18 +66,10 @@ public class GameScreen implements Screen {
         this.viewport.apply();
 
         InputController.setViewport(viewport);
-        InputController.setViewportBounds(
-            viewport.getScreenX(),
-            viewport.getScreenY(),
-            viewport.getScreenWidth(),
-            viewport.getScreenHeight()
-        );
-
 
         this.touchControls = new TouchControls();
 
         camera.position.set(Constants.WORLD_WIDTH / 2f, Constants.WORLD_HEIGHT / 2f, 0f);
-
 
         Assets.load();
 

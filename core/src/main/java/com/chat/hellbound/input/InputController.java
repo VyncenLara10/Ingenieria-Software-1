@@ -38,55 +38,56 @@ public class InputController {
     private static Viewport viewport = null;
 
     //===========================================
-    //  NUEVO: Recibir Viewport del GameScreen
+    //  Recibir viewport DEL GameScreen
     //===========================================
     public static void setViewport(Viewport vp) {
         viewport = vp;
+        updateViewportBounds();
         invalidateLayout();
     }
 
-    // Screen → Viewport → Coordenadas finales
-    private static Vector2 toViewportCoords(float screenX, float screenY) {
-        if (viewport == null) return new Vector2(screenX, screenY);
+    // IMPORTANTÍSIMO: usar screenX/screenY reales del viewport
+    private static void updateViewportBounds() {
+        if (viewport == null) return;
 
-        Vector2 out = new Vector2(screenX, screenY);
-        viewport.unproject(out);
-        return out;
+        vpX = viewport.getScreenX();
+        vpY = viewport.getScreenY();
+        vpW = viewport.getScreenWidth();
+        vpH = viewport.getScreenHeight();
     }
 
-    public static void setViewportBounds(int x, int y, int w, int h) {
-        vpX = x;
-        vpY = y;
-        vpW = Math.max(1, w);
-        vpH = Math.max(1, h);
-        layoutDirty = true;
+    // Convertir coordenadas de pantalla → dentro del viewport recortado
+    private static Vector2 toViewportScreen(float sx, float sy) {
+        float vx = (sx - vpX);
+        float vy = (Gdx.graphics.getHeight() - sy) - vpY;
+        return new Vector2(vx, vy);
     }
 
     //===========================================
-    //       BUCLE PRINCIPAL DE INPUT
+    //       LOOP PRINCIPAL
     //===========================================
     public static void update() {
         attackPressedThisFrame = false;
         activeAvility = false;
 
-        if (Gdx.app.getType() == Application.ApplicationType.Android) {
-            updateLayoutIfNeeded();
-            pollTouch();
-        } else {
-            pollDesktop();
-        }
+        if (viewport != null) updateViewportBounds();
+        updateLayoutIfNeeded();
+
+        if (isAndroid()) pollTouch();
+        else pollDesktop();
     }
 
     //===========================================
-    //       INPUT PARA PC
+    //            DESKTOP INPUT
     //===========================================
     private static void pollDesktop() {
-        float x = 0f, y = 0f;
+        float x = 0f;
+        float y = 0f;
 
-        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT))  x -= 1f;
+        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) x -= 1f;
         if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) x += 1f;
-        if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP))    y += 1f;
-        if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN))  y -= 1f;
+        if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) y += 1f;
+        if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) y -= 1f;
 
         xAxis = x;
         yAxis = y;
@@ -100,18 +101,17 @@ public class InputController {
 
         attackPressedThisFrame = pressed;
 
-        boolean ap = false;
-        if (Gdx.input.isKeyJustPressed(Input.Keys.E)) ap = true;
-        activeAvility = ap;
+        activeAvility = Gdx.input.isKeyJustPressed(Input.Keys.E);
     }
 
     //===========================================
-    //            INPUT PARA ANDROID
+    //            ANDROID INPUT
     //===========================================
     private static void pollTouch() {
-        float x = 0f, y = 0f;
 
-        // Reset pointers cuando se levanten
+        float x = 0f;
+        float y = 0f;
+
         if (joyPointer != -1 && !Gdx.input.isTouched(joyPointer)) joyPointer = -1;
         if (atkPointer != -1 && !Gdx.input.isTouched(atkPointer)) atkPointer = -1;
         if (abiPointer != -1 && !Gdx.input.isTouched(abiPointer)) abiPointer = -1;
@@ -128,54 +128,40 @@ public class InputController {
             float rawX = Gdx.input.getX(p);
             float rawY = Gdx.input.getY(p);
 
-            // Convertir a coords del viewport real
-            Vector2 v = toViewportCoords(rawX, rawY);
+            Vector2 v = toViewportScreen(rawX, rawY);
             float sx = v.x;
             float sy = v.y;
 
-            boolean joyFree = (joyPointer == -1);
-            boolean atkFree = (atkPointer == -1);
-            boolean abiFree = (abiPointer == -1);
+            if (sx < 0 || sy < 0 || sx > vpW || sy > vpH) continue;
 
-            boolean inJoy = joyFree && isInsideScaled(sx, sy, joyCX, joyCY, joyR, JOY_HIT_SCALE);
-            boolean inAtk = atkFree && isInsideScaled(sx, sy, atkCX, atkCY, atkR, BTN_HIT_SCALE);
-            boolean inAbi = abiFree && isInsideScaled(sx, sy, abiCX, abiCY, abiR, BTN_HIT_SCALE);
+            boolean joyFree = joyPointer == -1;
+            boolean atkFree = atkPointer == -1;
+            boolean abiFree = abiPointer == -1;
+
+            boolean inJoy = joyFree && inside(sx, sy, joyCX, joyCY, joyR * JOY_HIT_SCALE);
+            boolean inAtk = atkFree && inside(sx, sy, atkCX, atkCY, atkR * BTN_HIT_SCALE);
+            boolean inAbi = abiFree && inside(sx, sy, abiCX, abiCY, abiR * BTN_HIT_SCALE);
 
             if (!(inJoy || inAtk || inAbi)) continue;
 
-            float bestDist2 = Float.MAX_VALUE;
-            int best = 0;
+            float best = Float.MAX_VALUE;
+            int sel = 0;
 
-            if (inJoy) {
-                float d2 = dist2(sx, sy, joyCX, joyCY);
-                if (d2 < bestDist2) { bestDist2 = d2; best = 1; }
-            }
-            if (inAtk) {
-                float d2 = dist2(sx, sy, atkCX, atkCY);
-                if (d2 < bestDist2) { bestDist2 = d2; best = 2; }
-            }
-            if (inAbi) {
-                float d2 = dist2(sx, sy, abiCX, abiCY);
-                if (d2 < bestDist2) { bestDist2 = d2; best = 3; }
-            }
+            float d;
 
-            if (best == 1 && joyPointer == -1) {
-                joyPointer = p;
-            } else if (best == 2 && atkPointer == -1) {
-                atkPointer = p;
-                newAttack = true;
-            } else if (best == 3 && abiPointer == -1) {
-                abiPointer = p;
-                newAbility = true;
-            }
+            if (inJoy) { d = dist2(sx, sy, joyCX, joyCY); if (d < best) { best = d; sel = 1; } }
+            if (inAtk) { d = dist2(sx, sy, atkCX, atkCY); if (d < best) { best = d; sel = 2; } }
+            if (inAbi) { d = dist2(sx, sy, abiCX, abiCY); if (d < best) { best = d; sel = 3; } }
+
+            if (sel == 1) joyPointer = p;
+            else if (sel == 2) { atkPointer = p; newAttack = true; }
+            else if (sel == 3) { abiPointer = p; newAbility = true; }
         }
 
-        // Movimiento joystick
+        // JOYSTICK
         if (joyPointer != -1 && Gdx.input.isTouched(joyPointer)) {
-            float rawX = Gdx.input.getX(joyPointer);
-            float rawY = Gdx.input.getY(joyPointer);
 
-            Vector2 v = toViewportCoords(rawX, rawY);
+            Vector2 v = toViewportScreen(Gdx.input.getX(joyPointer), Gdx.input.getY(joyPointer));
             float sx = v.x;
             float sy = v.y;
 
@@ -189,7 +175,8 @@ public class InputController {
                 float ny = dy / len;
 
                 if (m < JOY_DEADZONE) {
-                    x = 0f; y = 0f;
+                    x = 0;
+                    y = 0;
                 } else {
                     float t = (m - JOY_DEADZONE) / (1f - JOY_DEADZONE);
                     x = nx * t;
@@ -205,12 +192,11 @@ public class InputController {
     }
 
     //===========================================
-    //                 HELPERS
+    // HELPERS
     //===========================================
-    private static boolean isInsideScaled(float x, float y, float cx, float cy, float r, float scale) {
-        float rr = r * scale;
+    private static boolean inside(float x, float y, float cx, float cy, float r) {
         float dx = x - cx, dy = y - cy;
-        return dx * dx + dy * dy <= rr * rr;
+        return dx * dx + dy * dy <= r * r;
     }
 
     private static float dist2(float x, float y, float cx, float cy) {
@@ -219,69 +205,62 @@ public class InputController {
     }
 
     //===========================================
-    //             CALCULO DEL LAYOUT
+    // LAYOUT
     //===========================================
     private static void updateLayoutIfNeeded() {
+
         if (!layoutDirty) return;
 
-        int sw = vpW;
-        int sh = vpH;
-
-        float localJoyR = Math.min(sw, sh) * 0.12f;
+        float localJoyR = vpW * 0.12f;
         float localJoyCX = MARGIN + localJoyR;
         float localJoyCY = MARGIN + localJoyR;
 
         float localAtkR = localJoyR * 0.9f;
-        float localAtkCX = sw - (MARGIN + localAtkR);
+        float localAtkCX = vpW - (MARGIN + localAtkR);
         float localAtkCY = MARGIN + localAtkR;
 
         float localAbiR = localAtkR * 0.85f;
         float localAbiCX = localAtkCX;
         float localAbiCY = localAtkCY + localAtkR + MARGIN + localAbiR;
 
-        float abiCYMax = sh - (MARGIN + localAbiR);
-        if (localAbiCY > abiCYMax) localAbiCY = abiCYMax;
+        if (localAbiCY > vpH - (MARGIN + localAbiR))
+            localAbiCY = vpH - (MARGIN + localAbiR);
 
         joyR = localJoyR;
-        joyCX = vpX + localJoyCX;
-        joyCY = vpY + localJoyCY;
+        joyCX = localJoyCX;
+        joyCY = localJoyCY;
 
         atkR = localAtkR;
-        atkCX = vpX + localAtkCX;
-        atkCY = vpY + localAtkCY;
+        atkCX = localAtkCX;
+        atkCY = localAtkCY;
 
         abiR = localAbiR;
-        abiCX = vpX + localAbiCX;
-        abiCY = vpY + localAbiCY;
+        abiCX = localAbiCX;
+        abiCY = localAbiCY;
 
         layoutDirty = false;
     }
 
-    public static void invalidateLayout() {
-        layoutDirty = true;
-    }
+    public static void invalidateLayout() { layoutDirty = true; }
 
     //===========================================
-    //         GETTERS QUE TÚ USAS
+    // GETTERS
     //===========================================
     public static boolean attackPressedThisFrame() { return attackPressedThisFrame; }
-    public static boolean activeAvilityPressed(){ return activeAvility; }
+    public static boolean activeAvilityPressed() { return activeAvility; }
 
     public static float getJoyCX() { return joyCX; }
     public static float getJoyCY() { return joyCY; }
-    public static float getJoyR()  { return joyR;  }
+    public static float getJoyR() { return joyR; }
+
     public static float getAtkCX() { return atkCX; }
     public static float getAtkCY() { return atkCY; }
-    public static float getAtkR()  { return atkR;  }
+    public static float getAtkR() { return atkR; }
+
     public static float getAbiCX() { return abiCX; }
     public static float getAbiCY() { return abiCY; }
-    public static float getAbiR()  { return abiR;  }
+    public static float getAbiR() { return abiR; }
 
-    public static boolean isJoyActive() {
-        return joyPointer != -1;
-    }
-
-    public static boolean isAndroid() {
-        return Gdx.app.getType() == Application.ApplicationType.Android;
-    }
+    public static boolean isJoyActive() { return joyPointer != -1; }
+    public static boolean isAndroid() { return Gdx.app.getType() == Application.ApplicationType.Android; }
 }
